@@ -5,6 +5,16 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import dynamic from "next/dynamic";
 
+const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-2xl border border-white/10 p-4 text-sm text-white/70">
+      Loading map…
+    </div>
+  ),
+});
+
+
 
 type ViewMode = "map" | "list";
 
@@ -13,10 +23,6 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [email, setEmail] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<ViewMode>("map");
-  const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
-    ssr: false,
-  });
-
 
   useEffect(() => {
     const run = async () => {
