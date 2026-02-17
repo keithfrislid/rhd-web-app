@@ -1,7 +1,9 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import type { Property } from "@/lib/properties"
 import { formatMoney } from "@/lib/properties"
+import { supabase } from "@/lib/supabase"
 
 export default function DealSheetPanel({
   selected,
@@ -11,6 +13,106 @@ export default function DealSheetPanel({
   onClose: () => void
 }) {
   const spread = selected.arv - selected.price - selected.repairs
+
+  const [isSaved, setIsSaved] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [checking, setChecking] = useState(true)
+
+  // Check saved state whenever the selected property changes
+  useEffect(() => {
+    let cancelled = false
+
+    const run = async () => {
+      setChecking(true)
+      setIsSaved(false)
+
+      const {
+        data: { user },
+        error: userErr,
+      } = await supabase.auth.getUser()
+
+      if (cancelled) return
+
+      if (userErr || !user) {
+        // If not logged in (shouldn't happen on dashboard), just disable save UX
+        setChecking(false)
+        return
+      }
+
+      const { data, error } = await supabase
+        .from("saved_properties")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("property_id", selected.id)
+        .limit(1)
+
+      if (cancelled) return
+
+      if (error) {
+        console.warn("Check saved_properties failed:", error.message)
+        setIsSaved(false)
+        setChecking(false)
+        return
+      }
+
+      setIsSaved((data?.length ?? 0) > 0)
+      setChecking(false)
+    }
+
+    run()
+
+    return () => {
+      cancelled = true
+    }
+  }, [selected.id])
+
+  const toggleSave = async () => {
+    if (saving || checking) return
+    setSaving(true)
+
+    const {
+      data: { user },
+      error: userErr,
+    } = await supabase.auth.getUser()
+
+    if (userErr || !user) {
+      console.warn("No authenticated user found for save toggle.")
+      setSaving(false)
+      return
+    }
+
+    if (isSaved) {
+      // Unsave
+      const { error } = await supabase
+        .from("saved_properties")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("property_id", selected.id)
+
+      if (error) {
+        console.warn("Unsave failed:", error.message)
+      } else {
+        setIsSaved(false)
+        window.dispatchEvent(new CustomEvent("rhd:saves-changed"))
+      }
+    } else {
+      // Save
+      const { error } = await supabase.from("saved_properties").insert({
+        user_id: user.id,
+        property_id: selected.id,
+      })
+
+      if (error) {
+        // If user clicks twice quickly, unique constraint can trigger — not a big deal.
+        console.warn("Save failed:", error.message)
+      } else {
+        setIsSaved(true)
+        window.dispatchEvent(new CustomEvent("rhd:saves-changed"))
+      }
+    }
+
+    setSaving(false)
+  }
 
   return (
     <div className="rounded-2xl bg-zinc-950/95 text-white border border-white/10 shadow-2xl backdrop-blur p-5">
@@ -95,14 +197,29 @@ export default function DealSheetPanel({
       </div>
 
       <div className="mt-2">
-        <button className="w-full rounded-xl border border-white/15 py-2 font-semibold hover:bg-white/5">
-          Save
+        <button
+          onClick={toggleSave}
+          disabled={checking || saving}
+          className={`w-full rounded-xl border py-2 font-semibold transition ${
+            isSaved
+              ? "border-white/25 bg-white/10 hover:bg-white/15"
+              : "border-white/15 hover:bg-white/5"
+          } ${checking || saving ? "opacity-70 cursor-not-allowed" : ""}`}
+        >
+          {checking
+            ? "Checking…"
+            : saving
+            ? isSaved
+              ? "Unsaving…"
+              : "Saving…"
+            : isSaved
+            ? "Saved"
+            : "Save"}
         </button>
       </div>
 
       <div className="mt-3 text-xs text-white/60">
-        (Mock data) Next we can add: comps placeholder + notes + “Due Diligence”
-        checklist.
+        Saved properties are tied to your account.
       </div>
     </div>
   )

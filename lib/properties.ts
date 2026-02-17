@@ -1,3 +1,7 @@
+import { supabase } from "@/lib/supabase"
+
+export type PropertyStatus = "New" | "Price Drop" | "Under Contract"
+
 export type Property = {
   id: string
   address: string
@@ -11,57 +15,37 @@ export type Property = {
   lat: number
   lng: number
   photoUrl: string
-  status: "New" | "Price Drop" | "Under Contract"
+  status: PropertyStatus
 }
-
-export const mockProperties: Property[] = [
-  {
-    id: "1",
-    address: "123 Main St, Nashville, TN",
-    price: 245000,
-    beds: 3,
-    baths: 2,
-    sqft: 1480,
-    acres: 0.19,
-    arv: 335000,
-    repairs: 45000,
-    lat: 36.1627,
-    lng: -86.7816,
-    photoUrl: "https://photos.google.com/",
-    status: "New",
-  },
-  {
-    id: "2",
-    address: "456 Oak Ave, Madison, TN",
-    price: 189000,
-    beds: 2,
-    baths: 1,
-    sqft: 1060,
-    acres: 0.22,
-    arv: 275000,
-    repairs: 35000,
-    lat: 36.2565,
-    lng: -86.715,
-    photoUrl: "https://photos.google.com/",
-    status: "New",
-  },
-  {
-    id: "3",
-    address: "789 Cedar Ln, Antioch, TN",
-    price: 310000,
-    beds: 4,
-    baths: 2,
-    sqft: 1925,
-    acres: 0.31,
-    arv: 405000,
-    repairs: 55000,
-    lat: 36.0601,
-    lng: -86.6711,
-    photoUrl: "https://photos.google.com/",
-    status: "New",
-  },
-]
 
 export function formatMoney(n: number) {
   return `$${n.toLocaleString()}`
+}
+
+export async function fetchProperties(): Promise<Property[]> {
+  const { data, error } = await supabase
+    .from("properties")
+    .select("id,address,price,beds,baths,sqft,acres,arv,repairs,lat,lng,photo_url,status")
+    .order("created_at", { ascending: false })
+
+  if (error) {
+    console.warn("fetchProperties error:", error.message)
+    return []
+  }
+
+  return (data ?? []).map((row: any) => ({
+    id: row.id,
+    address: row.address,
+    price: row.price,
+    beds: row.beds,
+    baths: Number(row.baths),
+    sqft: row.sqft,
+    acres: Number(row.acres),
+    arv: row.arv,
+    repairs: row.repairs,
+    lat: row.lat,
+    lng: row.lng,
+    photoUrl: row.photo_url ?? "https://photos.google.com/",
+    status: row.status as PropertyStatus,
+  }))
 }
