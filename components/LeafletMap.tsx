@@ -9,8 +9,14 @@ type Property = {
   price: number
   beds: number
   baths: number
+  sqft: number
+  acres: number
+  arv: number
+  repairs: number
   lat: number
   lng: number
+  photoUrl: string
+  status: "New" | "Price Drop" | "Under Contract"
 }
 
 const mockProperties: Property[] = [
@@ -20,8 +26,14 @@ const mockProperties: Property[] = [
     price: 245000,
     beds: 3,
     baths: 2,
+    sqft: 1480,
+    acres: 0.19,
+    arv: 335000,
+    repairs: 45000,
     lat: 36.1627,
     lng: -86.7816,
+    photoUrl: "https://photos.google.com/", // replace with your real link
+    status: "New",
   },
   {
     id: "2",
@@ -29,8 +41,14 @@ const mockProperties: Property[] = [
     price: 189000,
     beds: 2,
     baths: 1,
+    sqft: 1060,
+    acres: 0.22,
+    arv: 275000,
+    repairs: 35000,
     lat: 36.2565,
     lng: -86.715,
+    photoUrl: "https://photos.google.com/",
+    status: "New",
   },
   {
     id: "3",
@@ -38,10 +56,20 @@ const mockProperties: Property[] = [
     price: 310000,
     beds: 4,
     baths: 2,
+    sqft: 1925,
+    acres: 0.31,
+    arv: 405000,
+    repairs: 55000,
     lat: 36.0601,
     lng: -86.6711,
+    photoUrl: "https://photos.google.com/",
+    status: "New",
   },
 ]
+
+function formatMoney(n: number) {
+  return `$${n.toLocaleString()}`
+}
 
 export default function LeafletMap() {
   const containerRef = useRef<HTMLDivElement | null>(null)
@@ -67,10 +95,10 @@ export default function LeafletMap() {
         style.innerHTML = `
           .leaflet-popup-content-wrapper {
             border-radius: 14px;
-            box-shadow: 0 18px 40px rgba(0,0,0,0.25);
+            box-shadow: 0 18px 40px rgba(0,0,0,0.20);
           }
           .leaflet-popup-content { margin: 12px 14px; }
-          .leaflet-popup-tip { box-shadow: 0 14px 30px rgba(0,0,0,0.18); }
+          .leaflet-popup-tip { box-shadow: 0 14px 30px rgba(0,0,0,0.12); }
 
           .rhd-popup-btn {
             display: inline-flex;
@@ -92,13 +120,12 @@ export default function LeafletMap() {
         document.head.appendChild(style)
       }
 
-      // Extra safety for Next dev reloads
       ;(containerRef.current as any)._leaflet_id = null
 
       const map = L.map(containerRef.current!)
       mapInstanceRef.current = map
 
-      // Basemap you liked
+      // Map style you liked
       L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
         attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
       }).addTo(map)
@@ -119,31 +146,45 @@ export default function LeafletMap() {
         popupAnchor: [0, -28],
       })
 
-      // Add markers + popups (DOM-based popup so button click is reliable)
       mockProperties.forEach((property) => {
         const marker = L.marker([property.lat, property.lng], { icon: offMarketIcon }).addTo(map)
 
-        // Build popup content as a real DOM node
+        // DOM-based popup (reliable click)
         const wrapper = L.DomUtil.create("div")
         wrapper.style.fontFamily = "ui-sans-serif, system-ui"
         wrapper.style.minWidth = "240px"
 
         wrapper.innerHTML = `
-          <div style="font-weight:650; margin-bottom:6px;">${property.address}</div>
-          <div style="font-weight:800; font-size:16px;">$${property.price.toLocaleString()}</div>
+          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:6px;">
+            <div style="font-weight:650; line-height:1.2;">${property.address}</div>
+            <div style="
+              display:${property.status === "New" ? "inline-flex" : "none"};
+              font-size:11px;
+              padding:4px 8px;
+              border-radius:9999px;
+              background:#dc2626;
+              color:#ffffff;
+              font-weight:700;
+              white-space:nowrap;
+              align-items:center;
+              justify-content:center;
+            ">
+              New
+            </div>
+          </div>
+          <div style="font-weight:800; font-size:16px;">${formatMoney(property.price)}</div>
           <div style="opacity:0.85; margin-top:4px;">
             ${property.beds} Beds • ${property.baths} Baths
           </div>
           <button type="button" class="rhd-popup-btn">View Details</button>
         `
 
-        // IMPORTANT: stop clicks inside the popup from being swallowed by the map
         L.DomEvent.disableClickPropagation(wrapper)
 
         const btn = wrapper.querySelector(".rhd-popup-btn") as HTMLButtonElement | null
         if (btn) {
           L.DomEvent.on(btn, "click", (e: any) => {
-            L.DomEvent.stop(e) // prevents Leaflet from hijacking it
+            L.DomEvent.stop(e)
             setSelected(property)
             map.closePopup()
           })
@@ -167,18 +208,34 @@ export default function LeafletMap() {
     }
   }, [])
 
+  const spread =
+    selected ? selected.arv - selected.price - selected.repairs : null
+
   return (
     <div className="relative w-full isolate">
-      <div ref={containerRef} className="w-full h-[500px] rounded-xl overflow-hidden relative z-0" />
+      {/* Map */}
+      <div
+        ref={containerRef}
+        className="w-full h-[500px] rounded-xl overflow-hidden relative z-0"
+      />
 
-      {/* Detail Panel */}
+      {/* Deal Sheet Panel (clean / institutional) */}
       {selected && (
-        <div className="absolute left-0 right-0 bottom-0 md:right-4 md:left-auto md:top-4 md:bottom-auto md:w-[360px] z-[2000] pointer-events-auto">
-          <div className="mx-3 md:mx-0 rounded-2xl bg-zinc-950/95 text-white border border-white/10 shadow-2xl backdrop-blur p-4 z-[2000]">
+        <div className="absolute left-0 right-0 bottom-0 md:right-4 md:left-auto md:top-4 md:bottom-auto md:w-[420px] z-[2000] pointer-events-auto">
+          <div className="mx-3 md:mx-0 rounded-2xl bg-zinc-950/95 text-white border border-white/10 shadow-2xl backdrop-blur p-5 z-[2000]">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <div className="text-sm text-white/70">Selected Property</div>
-                <div className="mt-1 text-base font-semibold">{selected.address}</div>
+                <div className="text-xs tracking-wide uppercase text-white/60">
+                  Deal Sheet
+                </div>
+                <div className="mt-1 flex items-center justify-between gap-2">
+                  <div className="text-base font-semibold leading-snug">{selected.address}</div>
+                  {selected.status === "New" && (
+                    <div className="text-[11px] px-2 py-1 rounded-full bg-red-600/90 border border-red-400/40 text-white font-semibold shadow-sm">
+                      New
+                    </div>
+                  )}
+                </div>
               </div>
               <button
                 onClick={() => setSelected(null)}
@@ -188,32 +245,68 @@ export default function LeafletMap() {
               </button>
             </div>
 
-            <div className="mt-4 grid grid-cols-3 gap-2">
+            {/* Quick stats */}
+            <div className="mt-4 grid grid-cols-2 gap-2">
               <div className="rounded-xl border border-white/10 bg-white/5 p-3">
                 <div className="text-xs text-white/60">Price</div>
-                <div className="mt-1 font-semibold">${selected.price.toLocaleString()}</div>
+                <div className="mt-1 text-lg font-semibold">
+                  {formatMoney(selected.price)}
+                </div>
               </div>
+
               <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                <div className="text-xs text-white/60">Beds</div>
-                <div className="mt-1 font-semibold">{selected.beds}</div>
-              </div>
-              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-                <div className="text-xs text-white/60">Baths</div>
-                <div className="mt-1 font-semibold">{selected.baths}</div>
+                <div className="text-xs text-white/60">Property</div>
+                <div className="mt-1 font-semibold">
+                  {selected.beds} bd • {selected.baths} ba
+                </div>
+                <div className="text-sm text-white/70">
+                  {selected.sqft.toLocaleString()} sqft • {selected.acres} acres
+                </div>
               </div>
             </div>
 
-            <div className="mt-4 flex gap-2">
-              <button className="flex-1 rounded-xl bg-white text-black font-semibold py-2 hover:opacity-90">
-                Request Access
+            {/* Investor metrics */}
+            <div className="mt-3 grid grid-cols-3 gap-2">
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                <div className="text-xs text-white/60">ARV</div>
+                <div className="mt-1 font-semibold">{formatMoney(selected.arv)}</div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                <div className="text-xs text-white/60">Repairs</div>
+                <div className="mt-1 font-semibold">{formatMoney(selected.repairs)}</div>
+              </div>
+              <div className="rounded-xl border border-white/10 bg-white/5 p-3">
+                <div className="text-xs text-white/60">Spread</div>
+                <div className="mt-1 font-semibold">
+                  {spread !== null ? formatMoney(spread) : "--"}
+                </div>
+              </div>
+            </div>
+
+            {/* Actions */}
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <a
+                href={selected.photoUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="col-span-1 rounded-xl border border-white/15 py-2 text-center font-semibold hover:bg-white/5"
+              >
+                Photos
+              </a>
+              <button className="col-span-2 rounded-xl bg-white text-black font-semibold py-2 hover:opacity-90">
+                Submit Offer
               </button>
-              <button className="flex-1 rounded-xl border border-white/15 py-2 font-semibold hover:bg-white/5">
+            </div>
+
+            <div className="mt-2">
+              <button className="w-full rounded-xl border border-white/15 py-2 font-semibold hover:bg-white/5">
                 Save
               </button>
             </div>
 
             <div className="mt-3 text-xs text-white/60">
-              Next: images + investor metrics (ARV, repairs, spread) + a “Submit Offer” CTA.
+              (Mock data) Next we can add: comps placeholder + notes + “Due
+              Diligence” checklist.
             </div>
           </div>
         </div>
