@@ -1,9 +1,10 @@
-"use client";
+"use client"
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabase";
-import dynamic from "next/dynamic";
+import { useEffect, useState } from "react"
+import { useRouter } from "next/navigation"
+import { supabase } from "@/lib/supabase"
+import dynamic from "next/dynamic"
+import PropertyListView from "@/components/PropertyListView"
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
   ssr: false,
@@ -12,41 +13,39 @@ const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
       Loading map…
     </div>
   ),
-});
+})
 
-
-
-type ViewMode = "map" | "list";
+type ViewMode = "map" | "list"
 
 export default function DashboardPage() {
-  const router = useRouter();
-  const [loading, setLoading] = useState(true);
-  const [email, setEmail] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("map");
+  const router = useRouter()
+  const [loading, setLoading] = useState(true)
+  const [email, setEmail] = useState<string | null>(null)
+  const [viewMode, setViewMode] = useState<ViewMode>("map")
 
   useEffect(() => {
     const run = async () => {
-      const { data } = await supabase.auth.getSession();
-      const session = data.session;
+      const { data } = await supabase.auth.getSession()
+      const session = data.session
 
       if (!session) {
-        router.replace("/login");
-        return;
+        router.replace("/login")
+        return
       }
 
-      setEmail(session.user.email ?? null);
-      setLoading(false);
-    };
+      setEmail(session.user.email ?? null)
+      setLoading(false)
+    }
 
-    run();
-  }, [router]);
+    run()
+  }, [router])
 
   if (loading) {
     return (
       <main className="p-6">
         <p className="text-sm text-white/70">Loading…</p>
       </main>
-    );
+    )
   }
 
   return (
@@ -68,6 +67,7 @@ export default function DashboardPage() {
           >
             Map
           </button>
+
           <button
             onClick={() => setViewMode("list")}
             className={`rounded-xl px-3 py-2 text-sm border border-white/20 ${
@@ -79,8 +79,8 @@ export default function DashboardPage() {
 
           <button
             onClick={async () => {
-              await supabase.auth.signOut();
-              router.replace("/login");
+              await supabase.auth.signOut()
+              router.replace("/login")
             }}
             className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
           >
@@ -90,16 +90,8 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-6">
-        {viewMode === "map" ? (
-          <LeafletMap />
-        ) : (
-          <div className="rounded-2xl border border-white/10 p-4">
-            <p className="text-sm text-white/70">
-              List view coming next. (We’ll show property cards here.)
-            </p>
-          </div>
-        )}
+        {viewMode === "map" ? <LeafletMap /> : <PropertyListView />}
       </div>
     </main>
-  );
+  )
 }
