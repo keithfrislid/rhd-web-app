@@ -67,6 +67,7 @@ export default function DashboardPage() {
           >
             Map
           </button>
+          
 
           <button
             onClick={() => setViewMode("list")}
@@ -76,6 +77,14 @@ export default function DashboardPage() {
           >
             List
           </button>
+
+          <button
+            onClick={() => router.push("/admin")}
+            className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
+          >
+            Admin
+          </button>
+
 
           <button
             onClick={async () => {

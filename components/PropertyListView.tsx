@@ -26,6 +26,10 @@ export default function PropertyListView() {
   const [pendingOfferIds, setPendingOfferIds] = useState<Set<string>>(new Set())
   const [pendingLoading, setPendingLoading] = useState(true)
 
+  const [acceptedOfferIds, setAcceptedOfferIds] = useState<Set<string>>(new Set())
+  const [acceptedLoading, setAcceptedLoading] = useState(true)
+
+
   // Load properties
   useEffect(() => {
     const run = async () => {
@@ -100,9 +104,41 @@ export default function PropertyListView() {
     setPendingLoading(false)
   }
 
+  const loadAcceptedOfferIds = async () => {
+    setAcceptedLoading(true)
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      setAcceptedOfferIds(new Set())
+      setAcceptedLoading(false)
+      return
+    }
+
+    const { data, error } = await supabase
+      .from("offers")
+      .select("property_id")
+      .eq("user_id", user.id)
+      .eq("status", "accepted")
+
+    if (error) {
+      console.warn("Failed to load accepted offers:", error.message)
+      setAcceptedOfferIds(new Set())
+      setAcceptedLoading(false)
+      return
+    }
+
+    setAcceptedOfferIds(new Set((data ?? []).map((r: any) => r.property_id as string)))
+    setAcceptedLoading(false)
+  }
+
+
   useEffect(() => {
     loadSavedIds()
     loadPendingOfferIds()
+    loadAcceptedOfferIds()
 
     // Refresh when deal sheet saves/unsaves
     const savesHandler = () => loadSavedIds()
@@ -256,6 +292,7 @@ export default function PropertyListView() {
               const spread = calcSpread(p)
               const isSaved = savedIds.has(p.id)
               const isPending = pendingOfferIds.has(p.id)
+              const isAccepted = acceptedOfferIds.has(p.id)
 
               return (
                 <button
@@ -287,6 +324,12 @@ export default function PropertyListView() {
                         {isPending && (
                           <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-sky-200 font-semibold">
                             Pending
+                          </span>
+                        )}
+
+                        {isAccepted && (
+                          <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-200 font-semibold">
+                            Accepted
                           </span>
                         )}
                       </div>
