@@ -16,6 +16,11 @@ export type Property = {
   lng: number
   photoUrl: string
   status: PropertyStatus
+
+  // Offer controls (v1)
+  offerDeadline?: string | null
+  isAcceptingOffers?: boolean
+  acceptedOfferId?: string | null
 }
 
 export function formatMoney(n: number) {
@@ -25,7 +30,9 @@ export function formatMoney(n: number) {
 export async function fetchProperties(): Promise<Property[]> {
   const { data, error } = await supabase
     .from("properties")
-    .select("id,address,price,beds,baths,sqft,acres,arv,repairs,lat,lng,photo_url,status")
+    .select(
+      "id,address,price,beds,baths,sqft,acres,arv,repairs,lat,lng,photo_url,status,offer_deadline,is_accepting_offers,accepted_offer_id"
+    )
     .order("created_at", { ascending: false })
 
   if (error) {
@@ -47,5 +54,10 @@ export async function fetchProperties(): Promise<Property[]> {
     lng: row.lng,
     photoUrl: row.photo_url ?? "https://photos.google.com/",
     status: row.status as PropertyStatus,
+
+    offerDeadline: row.offer_deadline ?? null,
+    isAcceptingOffers:
+      typeof row.is_accepting_offers === "boolean" ? row.is_accepting_offers : true,
+    acceptedOfferId: row.accepted_offer_id ?? null,
   }))
 }

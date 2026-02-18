@@ -171,7 +171,7 @@ export default function LeafletMap() {
     <div className="relative w-full isolate">
       <div
         ref={containerRef}
-        className="w-full h-[500px] rounded-xl overflow-hidden relative z-0"
+        className="w-full h-[70vh] min-h-[520px] rounded-xl overflow-hidden relative z-0"
       />
 
       {loading && (
@@ -183,7 +183,7 @@ export default function LeafletMap() {
       )}
 
       {selected && (
-        <div className="absolute left-0 right-0 bottom-0 md:right-4 md:left-auto md:top-4 md:bottom-auto md:w-[420px] z-[2000] pointer-events-auto">
+        <div className="absolute left-0 right-0 bottom-0 md:right-4 md:left-auto md:top-4 md:bottom-auto md:w-[400px] z-[2000] pointer-events-auto">
           <div className="mx-3 md:mx-0">
             <DealSheetPanel selected={selected} onClose={() => setSelected(null)} />
           </div>

@@ -6,7 +6,7 @@ import { fetchProperties, formatMoney, type Property } from "@/lib/properties"
 import { supabase } from "@/lib/supabase"
 
 type SortMode = "newest" | "price" | "spread"
-type FilterMode = "all" | "saved"
+type FilterMode = "all" | "saved" | "pending"
 
 function calcSpread(p: Property) {
   return p.arv - p.price - p.repairs
@@ -22,6 +22,9 @@ export default function PropertyListView() {
 
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [savedLoading, setSavedLoading] = useState(true)
+
+  const [pendingOfferIds, setPendingOfferIds] = useState<Set<string>>(new Set())
+  const [pendingLoading, setPendingLoading] = useState(true)
 
   // Load properties
   useEffect(() => {
@@ -65,21 +68,62 @@ export default function PropertyListView() {
     setSavedLoading(false)
   }
 
+  // Load pending offer property ids for this user
+  const loadPendingOfferIds = async () => {
+    setPendingLoading(true)
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      setPendingOfferIds(new Set())
+      setPendingLoading(false)
+      return
+    }
+
+    const { data, error } = await supabase
+      .from("offers")
+      .select("property_id,status")
+      .eq("user_id", user.id)
+      .eq("status", "pending")
+
+    if (error) {
+      console.warn("Failed to load offers:", error.message)
+      setPendingOfferIds(new Set())
+      setPendingLoading(false)
+      return
+    }
+
+    const ids = new Set((data ?? []).map((r: any) => r.property_id as string))
+    setPendingOfferIds(ids)
+    setPendingLoading(false)
+  }
+
   useEffect(() => {
     loadSavedIds()
+    loadPendingOfferIds()
 
-    // Refresh savedIds when deal sheet saves/unsaves
-    const handler = () => loadSavedIds()
-    window.addEventListener("rhd:saves-changed", handler)
+    // Refresh when deal sheet saves/unsaves
+    const savesHandler = () => loadSavedIds()
+    window.addEventListener("rhd:saves-changed", savesHandler)
+
+    // Refresh when offers change (submit / delete)
+    const offersHandler = () => loadPendingOfferIds()
+    window.addEventListener("rhd:offers-changed", offersHandler)
 
     // Also refresh when user tabs away/back
     const visHandler = () => {
-      if (document.visibilityState === "visible") loadSavedIds()
+      if (document.visibilityState === "visible") {
+        loadSavedIds()
+        loadPendingOfferIds()
+      }
     }
     document.addEventListener("visibilitychange", visHandler)
 
     return () => {
-      window.removeEventListener("rhd:saves-changed", handler)
+      window.removeEventListener("rhd:saves-changed", savesHandler)
+      window.removeEventListener("rhd:offers-changed", offersHandler)
       document.removeEventListener("visibilitychange", visHandler)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -90,6 +134,8 @@ export default function PropertyListView() {
     const filtered =
       filterMode === "saved"
         ? propertiesRaw.filter((p) => savedIds.has(p.id))
+        : filterMode === "pending"
+        ? propertiesRaw.filter((p) => pendingOfferIds.has(p.id))
         : propertiesRaw
 
     // sort
@@ -109,12 +155,14 @@ export default function PropertyListView() {
     })
 
     return copy
-  }, [propertiesRaw, sortMode, filterMode, savedIds])
+  }, [propertiesRaw, sortMode, filterMode, savedIds, pendingOfferIds])
 
   const activeCountLabel = loading
     ? "Loading…"
     : filterMode === "saved"
     ? `${properties.length} saved`
+    : filterMode === "pending"
+    ? `${properties.length} pending`
     : `${properties.length} active`
 
   return (
@@ -152,6 +200,16 @@ export default function PropertyListView() {
                 >
                   Saved
                 </button>
+                <button
+                  onClick={() => setFilterMode("pending")}
+                  className={`rounded-md px-2 py-1 text-xs ${
+                    filterMode === "pending"
+                      ? "bg-white text-black"
+                      : "text-white/70 hover:bg-white/10"
+                  }`}
+                >
+                  Pending
+                </button>
               </div>
 
               <div className="h-4 w-px bg-white/10" />
@@ -170,9 +228,9 @@ export default function PropertyListView() {
             </div>
           </div>
 
-          {savedLoading && (
+          {(savedLoading || pendingLoading) && (
             <div className="mt-1 text-[11px] text-white/50">
-              Syncing saved…
+              Syncing {savedLoading && pendingLoading ? "saved + pending…" : savedLoading ? "saved…" : "pending…"}
             </div>
           )}
         </div>
@@ -188,11 +246,16 @@ export default function PropertyListView() {
           <div className="p-4 text-sm text-white/70">
             No saved properties yet. Open a deal and hit <span className="font-semibold">Save</span>.
           </div>
+        ) : properties.length === 0 && filterMode === "pending" ? (
+          <div className="p-4 text-sm text-white/70">
+            No pending offers yet. Open a deal and submit an offer.
+          </div>
         ) : (
           <div className="divide-y divide-white/10">
             {properties.map((p) => {
               const spread = calcSpread(p)
               const isSaved = savedIds.has(p.id)
+              const isPending = pendingOfferIds.has(p.id)
 
               return (
                 <button
@@ -218,6 +281,12 @@ export default function PropertyListView() {
                         {isSaved && (
                           <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-white/80 font-semibold">
                             Saved
+                          </span>
+                        )}
+
+                        {isPending && (
+                          <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-sky-200 font-semibold">
+                            Pending
                           </span>
                         )}
                       </div>
