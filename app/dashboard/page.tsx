@@ -79,6 +79,14 @@ export default function DashboardPage() {
           </button>
 
           <button
+            onClick={() => router.push("/offers")}
+            className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
+          >
+            My Offers
+          </button>
+
+
+          <button
             onClick={() => router.push("/admin")}
             className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
           >
