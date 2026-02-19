@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
-import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import DealSheetPanel from "@/components/DealSheetPanel"
 import { formatMoney, type Property } from "@/lib/properties"
@@ -25,7 +24,9 @@ function statusPill(status: OfferStatus) {
 
   if (status === "accepted") {
     return (
-      <span className={`${base} bg-emerald-500/15 border-emerald-400/30 text-emerald-200`}>
+      <span
+        className={`${base} bg-emerald-500/15 border-emerald-400/30 text-emerald-200`}
+      >
         Accepted
       </span>
     )
@@ -61,7 +62,9 @@ function asProperty(row: any): Property {
     status: row.status,
     offerDeadline: row.offer_deadline ?? null,
     isAcceptingOffers:
-      typeof row.is_accepting_offers === "boolean" ? row.is_accepting_offers : true,
+      typeof row.is_accepting_offers === "boolean"
+        ? row.is_accepting_offers
+        : true,
     acceptedOfferId: row.accepted_offer_id ?? null,
   }
 }
@@ -71,11 +74,6 @@ function spread(p: Property) {
 }
 
 export default function OffersPage() {
-  const router = useRouter()
-
-  const [loading, setLoading] = useState(true)
-  const [email, setEmail] = useState<string | null>(null)
-
   const [offers, setOffers] = useState<OfferWithProperty[]>([])
   const [fetching, setFetching] = useState(true)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
@@ -92,8 +90,10 @@ export default function OffersPage() {
       error: userErr,
     } = await supabase.auth.getUser()
 
+    // AuthShell should prevent this, but keep as a safe guard:
     if (userErr || !user) {
-      router.replace("/login")
+      setOffers([])
+      setFetching(false)
       return
     }
 
@@ -128,23 +128,9 @@ export default function OffersPage() {
   }
 
   useEffect(() => {
-    const run = async () => {
-      const { data } = await supabase.auth.getSession()
-      const session = data.session
-
-      if (!session) {
-        router.replace("/login")
-        return
-      }
-
-      setEmail(session.user.email ?? null)
-      setLoading(false)
-      await loadOffers()
-    }
-
-    run()
+    loadOffers()
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router])
+  }, [])
 
   // Refresh when you submit/withdraw from deal sheet
   useEffect(() => {
@@ -154,11 +140,21 @@ export default function OffersPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const pending = useMemo(() => offers.filter((o) => o.status === "pending"), [offers])
-  const accepted = useMemo(() => offers.filter((o) => o.status === "accepted"), [offers])
-  const rejected = useMemo(() => offers.filter((o) => o.status === "rejected"), [offers])
+  const pending = useMemo(
+    () => offers.filter((o) => o.status === "pending"),
+    [offers]
+  )
+  const accepted = useMemo(
+    () => offers.filter((o) => o.status === "accepted"),
+    [offers]
+  )
+  const rejected = useMemo(
+    () => offers.filter((o) => o.status === "rejected"),
+    [offers]
+  )
 
-  const visible = tab === "pending" ? pending : tab === "accepted" ? accepted : rejected
+  const visible =
+    tab === "pending" ? pending : tab === "accepted" ? accepted : rejected
 
   const summary = useMemo(() => {
     return {
@@ -168,45 +164,22 @@ export default function OffersPage() {
     }
   }, [pending.length, accepted.length, rejected.length])
 
-  if (loading) {
-    return (
-      <main className="p-6">
-        <div className="text-sm text-white/70">Loading…</div>
-      </main>
-    )
-  }
-
   return (
-    <main className="p-6">
+    <main className="w-full">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">My Offers</h1>
-          <p className="mt-1 text-sm text-white/70">Signed in as {email ?? "unknown"}</p>
+          <p className="mt-1 text-sm text-white/70">
+            Track pending, accepted, and rejected offers.
+          </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={() => router.push("/dashboard")}
-            className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
-          >
-            Back to Dashboard
-          </button>
-
           <button
             onClick={loadOffers}
             className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
           >
             Refresh
-          </button>
-
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut()
-              router.replace("/login")
-            }}
-            className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
-          >
-            Sign out
           </button>
         </div>
       </div>
@@ -214,19 +187,27 @@ export default function OffersPage() {
       {/* Summary + tabs */}
       <div className="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-4">
         <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="text-xs uppercase tracking-wide text-white/60">Summary</div>
+          <div className="text-xs uppercase tracking-wide text-white/60">
+            Summary
+          </div>
           <div className="mt-3 grid grid-cols-3 gap-2">
             <div className="rounded-xl border border-white/10 bg-black/30 p-3">
               <div className="text-[11px] text-white/60">Pending</div>
-              <div className="mt-1 text-lg font-extrabold">{summary.pending}</div>
+              <div className="mt-1 text-lg font-extrabold">
+                {summary.pending}
+              </div>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/30 p-3">
               <div className="text-[11px] text-white/60">Accepted</div>
-              <div className="mt-1 text-lg font-extrabold">{summary.accepted}</div>
+              <div className="mt-1 text-lg font-extrabold">
+                {summary.accepted}
+              </div>
             </div>
             <div className="rounded-xl border border-white/10 bg-black/30 p-3">
               <div className="text-[11px] text-white/60">Rejected</div>
-              <div className="mt-1 text-lg font-extrabold">{summary.rejected}</div>
+              <div className="mt-1 text-lg font-extrabold">
+                {summary.rejected}
+              </div>
             </div>
           </div>
 
@@ -234,7 +215,9 @@ export default function OffersPage() {
             <button
               onClick={() => setTab("pending")}
               className={`flex-1 rounded-lg px-2 py-2 text-sm font-semibold transition ${
-                tab === "pending" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
+                tab === "pending"
+                  ? "bg-white text-black"
+                  : "text-white/70 hover:bg-white/10"
               }`}
             >
               Pending
@@ -242,7 +225,9 @@ export default function OffersPage() {
             <button
               onClick={() => setTab("accepted")}
               className={`flex-1 rounded-lg px-2 py-2 text-sm font-semibold transition ${
-                tab === "accepted" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
+                tab === "accepted"
+                  ? "bg-white text-black"
+                  : "text-white/70 hover:bg-white/10"
               }`}
             >
               Accepted
@@ -250,7 +235,9 @@ export default function OffersPage() {
             <button
               onClick={() => setTab("rejected")}
               className={`flex-1 rounded-lg px-2 py-2 text-sm font-semibold transition ${
-                tab === "rejected" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
+                tab === "rejected"
+                  ? "bg-white text-black"
+                  : "text-white/70 hover:bg-white/10"
               }`}
             >
               Rejected
@@ -266,7 +253,11 @@ export default function OffersPage() {
         <div className="lg:col-span-3 rounded-2xl border border-white/10 overflow-hidden">
           <div className="px-4 py-3 border-b border-white/10 bg-white/5 flex items-center justify-between">
             <div className="text-sm font-semibold">
-              {tab === "pending" ? "Pending Offers" : tab === "accepted" ? "Accepted Offers" : "Rejected Offers"}
+              {tab === "pending"
+                ? "Pending Offers"
+                : tab === "accepted"
+                ? "Accepted Offers"
+                : "Rejected Offers"}
             </div>
             <div className="text-xs text-white/60">
               {fetching ? "Loading…" : `${visible.length} total`}
@@ -285,7 +276,8 @@ export default function OffersPage() {
             <div className="p-4 text-sm text-white/70">Loading offers…</div>
           ) : visible.length === 0 ? (
             <div className="p-4 text-sm text-white/70">
-              {tab === "pending" && "No pending offers. Submit an offer from a deal sheet."}
+              {tab === "pending" &&
+                "No pending offers. Submit an offer from a deal sheet."}
               {tab === "accepted" && "No accepted offers yet."}
               {tab === "rejected" && "No rejected offers."}
             </div>
@@ -326,8 +318,8 @@ export default function OffersPage() {
 
                         {p && (
                           <div className="mt-1 text-[12px] text-white/70">
-                            {p.beds} bd • {p.baths} ba • {p.sqft.toLocaleString()} sqft •{" "}
-                            {p.acres} ac
+                            {p.beds} bd • {p.baths} ba •{" "}
+                            {p.sqft.toLocaleString()} sqft • {p.acres} ac
                           </div>
                         )}
                       </div>

@@ -1,19 +1,24 @@
 import { supabase } from "@/lib/supabase"
 
-export async function getSessionUser() {
-  const { data, error } = await supabase.auth.getSession()
+// Optional helper if you still want it elsewhere
+export async function getUserId(): Promise<string | null> {
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+
   if (error) return null
-  return data.session?.user ?? null
+  return user?.id ?? null
 }
 
-export async function isCurrentUserAdmin(): Promise<boolean> {
-  const user = await getSessionUser()
-  if (!user) return false
+export async function isCurrentUserAdmin(userId?: string): Promise<boolean> {
+  const uid = userId ?? (await getUserId())
+  if (!uid) return false
 
   const { data, error } = await supabase
     .from("profiles")
     .select("is_admin")
-    .eq("user_id", user.id)
+    .eq("user_id", uid)
     .maybeSingle()
 
   if (error) {

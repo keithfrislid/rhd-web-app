@@ -6,13 +6,7 @@ import { usePathname, useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { isCurrentUserAdmin } from "@/lib/admin"
 
-function NavLink({
-  href,
-  label,
-}: {
-  href: string
-  label: string
-}) {
+function NavLink({ href, label }: { href: string; label: string }) {
   const pathname = usePathname()
   const active = pathname === href
 
@@ -32,34 +26,65 @@ function NavLink({
 
 export default function TopNav() {
   const router = useRouter()
-  const [email, setEmail] = useState<string | null>(null)
+  const [loadingNav, setLoadingNav] = useState(true)
+  const [email, setEmail] = useState<string>("")
   const [isAdmin, setIsAdmin] = useState(false)
 
   useEffect(() => {
-    const run = async () => {
-      const { data } = await supabase.auth.getSession()
-      const session = data.session
-      setEmail(session?.user?.email ?? null)
+    let cancelled = false
 
-      if (!session) {
-        setIsAdmin(false)
+    const run = async () => {
+      // AuthShell already ensures there is a session, but we still fetch user/email for display.
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+
+      if (!user) {
+        // Safety: if something weird happens, don't show nav.
+        if (!cancelled) {
+          setEmail("")
+          setIsAdmin(false)
+          setLoadingNav(false)
+        }
         return
       }
 
-      const admin = await isCurrentUserAdmin()
-      setIsAdmin(admin)
+      const admin = await isCurrentUserAdmin(user.id)
+
+      if (!cancelled) {
+        setEmail(user.email ?? "")
+        setIsAdmin(admin)
+        setLoadingNav(false)
+      }
     }
 
     run()
 
-    // keep it in sync with auth changes
-    const { data: sub } = supabase.auth.onAuthStateChange(() => run())
     return () => {
-      sub.subscription.unsubscribe()
+      cancelled = true
     }
   }, [])
 
-  // Only show nav when logged in (keeps /login clean)
+  // Prevent flicker: render a minimal skeleton bar while we fetch admin/email
+  if (loadingNav) {
+    return (
+      <div className="sticky top-0 z-[6000] border-b border-white/10 bg-black/70 backdrop-blur">
+        <div className="mx-auto max-w-6xl px-4 py-3 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <div className="font-extrabold tracking-wide">RHD</div>
+            <div className="hidden sm:flex items-center gap-2 ml-2">
+              <div className="h-9 w-24 rounded-xl border border-white/10 bg-white/5" />
+              <div className="h-9 w-24 rounded-xl border border-white/10 bg-white/5" />
+              <div className="h-9 w-20 rounded-xl border border-white/10 bg-white/5" />
+            </div>
+          </div>
+          <div className="h-9 w-24 rounded-xl border border-white/10 bg-white/5" />
+        </div>
+      </div>
+    )
+  }
+
+  // If for any reason we have no email, don't render (keeps /login clean even if mounted somewhere)
   if (!email) return null
 
   return (
@@ -78,9 +103,7 @@ export default function TopNav() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hidden md:block text-xs text-white/60">
-            {email}
-          </div>
+          <div className="hidden md:block text-xs text-white/60">{email}</div>
 
           <button
             onClick={async () => {

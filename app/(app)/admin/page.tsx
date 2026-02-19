@@ -28,10 +28,9 @@ function spread(p: PropertyRow) {
 
 export default function AdminPage() {
   const router = useRouter()
-  const [loading, setLoading] = useState(true)
+
+  const [checkingAdmin, setCheckingAdmin] = useState(true)
   const [propsLoading, setPropsLoading] = useState(true)
-  const [isAdmin, setIsAdmin] = useState(false)
-  const [email, setEmail] = useState<string | null>(null)
 
   const [properties, setProperties] = useState<PropertyRow[]>([])
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -98,49 +97,50 @@ export default function AdminPage() {
   }
 
   useEffect(() => {
+    let cancelled = false
+
     const run = async () => {
-      const { data } = await supabase.auth.getSession()
-      const session = data.session
+      // AuthShell already guarantees a session, but admin check is still needed.
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
 
-      if (!session) {
-        router.replace("/login")
-        return
-      }
+      const adminOk = await isCurrentUserAdmin(user?.id ?? undefined)
 
-      setEmail(session.user.email ?? null)
 
-      const adminOk = await isCurrentUserAdmin()
       if (!adminOk) {
         router.replace("/dashboard")
         return
       }
 
-      setIsAdmin(true)
-      setLoading(false)
+      if (cancelled) return
+      setCheckingAdmin(false)
       await loadProperties()
     }
 
     run()
+
+    return () => {
+      cancelled = true
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
-  if (loading) {
+  if (checkingAdmin) {
     return (
-      <main className="p-6">
-        <p className="text-sm text-white/70">Loading…</p>
+      <main className="w-full">
+        <p className="text-sm text-white/70">Checking admin access…</p>
       </main>
     )
   }
 
-  if (!isAdmin) return null
-
   return (
-    <main className="p-6">
+    <main className="w-full">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Admin</h1>
           <p className="mt-1 text-sm text-white/70">
-            Signed in as {email ?? "unknown"} • Admin access
+            Manage properties and accept offers.
           </p>
         </div>
 
@@ -153,27 +153,10 @@ export default function AdminPage() {
           </button>
 
           <button
-            onClick={() => router.push("/dashboard")}
-            className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
-          >
-            Back to Dashboard
-          </button>
-
-          <button
             onClick={loadProperties}
             className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
           >
             Refresh
-          </button>
-
-          <button
-            onClick={async () => {
-              await supabase.auth.signOut()
-              router.replace("/login")
-            }}
-            className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
-          >
-            Sign out
           </button>
         </div>
       </div>
@@ -200,7 +183,8 @@ export default function AdminPage() {
             <div className="p-4 text-sm text-white/70">Loading properties…</div>
           ) : properties.length === 0 ? (
             <div className="p-4 text-sm text-white/70">
-              No properties found. Click <span className="font-semibold">+ Add Property</span>.
+              No properties found. Click{" "}
+              <span className="font-semibold">+ Add Property</span>.
             </div>
           ) : (
             <div className="divide-y divide-white/10">
