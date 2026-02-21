@@ -18,7 +18,7 @@ export default function LoginPage() {
     setErrorMessage(null);
 
     const { error } = await supabase.auth.signInWithPassword({
-      email,
+      email: email.trim(),
       password,
     });
 
@@ -75,6 +75,17 @@ export default function LoginPage() {
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
+
+          <div className="pt-2 text-sm text-white/70">
+            New buyer?{" "}
+            <button
+              type="button"
+              onClick={() => router.push("/signup")}
+              className="underline hover:text-white"
+            >
+              Request access
+            </button>
+          </div>
         </form>
       </div>
     </main>

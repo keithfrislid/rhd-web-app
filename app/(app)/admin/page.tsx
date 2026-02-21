@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import AdminOffersPanel from "@/components/AdminOffersPanel"
 import AdminCreatePropertyModal from "@/components/AdminCreatePropertyModal"
+import AdminUsersPanel from "@/components/AdminUsersPanel"
 import { formatMoney } from "@/lib/properties"
 import { isCurrentUserAdmin } from "@/lib/admin"
 
@@ -34,15 +35,16 @@ type PendingOfferRow = {
     id: string
     address: string
     price: number
-    arv: number
-    repairs: number
     status: "New" | "Price Drop" | "Under Contract"
-    is_accepting_offers?: boolean
-    accepted_offer_id?: string | null
   } | null
 }
 
-type AdminView = "properties" | "inbox"
+type ProfileRow = {
+  user_id: string
+  role: string
+}
+
+type AdminView = "properties" | "inbox" | "users"
 
 function spread(p: { arv: number; price: number; repairs: number }) {
   return p.arv - p.price - p.repairs
@@ -70,6 +72,9 @@ export default function AdminPage() {
 
   const [inboxLoading, setInboxLoading] = useState(true)
   const [pendingOffers, setPendingOffers] = useState<PendingOfferRow[]>([])
+
+  const [usersLoading, setUsersLoading] = useState(true)
+  const [pendingUsersCount, setPendingUsersCount] = useState<number>(0)
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
@@ -111,7 +116,6 @@ export default function AdminPage() {
     setProperties(rows)
     setPropsLoading(false)
 
-    // keep selection stable; if deleted, pick first
     if (rows.length === 0) {
       setSelectedId(null)
     } else if (!selectedId || !rows.some((r) => r.id === selectedId)) {
@@ -149,7 +153,6 @@ export default function AdminPage() {
       return
     }
 
-    // Supabase sometimes returns joined rows as an array; normalize to a single object.
     const rows = (data ?? []).map((o: any) => {
       const prop = Array.isArray(o.property) ? o.property[0] ?? null : o.property ?? null
       return { ...o, properties: prop }
@@ -159,15 +162,31 @@ export default function AdminPage() {
     setInboxLoading(false)
   }
 
+  const loadPendingUsersCount = async () => {
+    setUsersLoading(true)
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("user_id,role")
+      .eq("role", "pending")
+
+    if (error) {
+      setPendingUsersCount(0)
+      setUsersLoading(false)
+      return
+    }
+
+    setPendingUsersCount((data ?? []).length)
+    setUsersLoading(false)
+  }
+
   const refreshAll = async () => {
-    await Promise.all([loadProperties(), loadInbox()])
+    await Promise.all([loadProperties(), loadInbox(), loadPendingUsersCount()])
   }
 
   const deleteProperty = async (propertyId: string, address: string) => {
     if (deleteBusy) return
-    const ok = window.confirm(
-      `Delete this property?\n\n${address}\n\nThis cannot be undone.`
-    )
+    const ok = window.confirm(`Delete this property?\n\n${address}\n\nThis cannot be undone.`)
     if (!ok) return
 
     setDeleteBusy(propertyId)
@@ -189,11 +208,7 @@ export default function AdminPage() {
     let cancelled = false
 
     const run = async () => {
-      // AuthShell already guarantees a session, but admin check is still needed.
-      const {
-        data: { user },
-      } = await supabase.auth.getUser()
-
+      const { data: { user } } = await supabase.auth.getUser()
       const adminOk = await isCurrentUserAdmin(user?.id ?? undefined)
 
       if (!adminOk) {
@@ -204,7 +219,6 @@ export default function AdminPage() {
       if (cancelled) return
       setCheckingAdmin(false)
 
-      // Load both so the inbox tab is instant
       await refreshAll()
     }
 
@@ -216,7 +230,6 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
-  // Refresh inbox when offers change (accept/reject/submit/withdraw)
   useEffect(() => {
     const handler = () => loadInbox()
     window.addEventListener("rhd:offers-changed", handler)
@@ -238,32 +251,40 @@ export default function AdminPage() {
         <div>
           <h1 className="text-2xl font-semibold">Admin</h1>
           <p className="mt-1 text-sm text-white/70">
-            Manage properties and review pending offers.
+            Manage properties, review offers, and approve users.
           </p>
 
-          {/* View toggle */}
           <div className="mt-3 inline-flex items-center gap-1 rounded-xl border border-white/15 bg-black/40 p-1">
             <button
               onClick={() => setView("properties")}
               className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                view === "properties"
-                  ? "bg-white text-black"
-                  : "text-white/70 hover:bg-white/10"
+                view === "properties" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
               }`}
             >
               Properties
             </button>
+
             <button
               onClick={() => setView("inbox")}
               className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                view === "inbox"
-                  ? "bg-white text-black"
-                  : "text-white/70 hover:bg-white/10"
+                view === "inbox" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
               }`}
             >
               Pending Offers{" "}
               <span className="ml-2 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] font-extrabold">
                 {inboxLoading ? "…" : pendingOffers.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setView("users")}
+              className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+                view === "users" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
+              }`}
+            >
+              Approve Users{" "}
+              <span className="ml-2 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] font-extrabold">
+                {usersLoading ? "…" : pendingUsersCount}
               </span>
             </button>
           </div>
@@ -292,10 +313,8 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* =============== VIEW: PROPERTIES =============== */}
       {view === "properties" && (
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-4">
-          {/* Left: property list */}
           <div className="lg:col-span-2 rounded-2xl border border-white/10 overflow-hidden">
             <div className="px-4 py-3 border-b border-white/10 bg-white/5">
               <div className="flex items-center justify-between">
@@ -310,29 +329,21 @@ export default function AdminPage() {
               <div className="p-4 text-sm text-white/70">Loading properties…</div>
             ) : properties.length === 0 ? (
               <div className="p-4 text-sm text-white/70">
-                No properties found. Click{" "}
-                <span className="font-semibold">+ Add Property</span>.
+                No properties found. Click <span className="font-semibold">+ Add Property</span>.
               </div>
             ) : (
               <div className="divide-y divide-white/10">
                 {properties.map((p) => {
                   const active = p.id === selectedId
-                  const isLocked =
-                    p.is_accepting_offers === false || !!p.accepted_offer_id
+                  const isLocked = p.is_accepting_offers === false || !!p.accepted_offer_id
                   const pendingForProp = pendingCountByProperty.get(p.id) ?? 0
 
                   return (
                     <div
                       key={p.id}
-                      className={`px-4 py-3 transition ${
-                        active ? "bg-white/10" : "hover:bg-white/5"
-                      }`}
+                      className={`px-4 py-3 transition ${active ? "bg-white/10" : "hover:bg-white/5"}`}
                     >
-                      <button
-                        type="button"
-                        onClick={() => setSelectedId(p.id)}
-                        className="w-full text-left"
-                      >
+                      <button type="button" onClick={() => setSelectedId(p.id)} className="w-full text-left">
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
                             <div className="font-semibold truncate">{p.address}</div>
@@ -348,8 +359,7 @@ export default function AdminPage() {
 
                             {pendingForProp > 0 && (
                               <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-sky-400/25 bg-sky-500/10 px-2 py-1 text-[11px] font-semibold text-sky-200">
-                                {pendingForProp} pending offer
-                                {pendingForProp === 1 ? "" : "s"}
+                                {pendingForProp} pending offer{pendingForProp === 1 ? "" : "s"}
                               </div>
                             )}
                           </div>
@@ -391,14 +401,9 @@ export default function AdminPage() {
             )}
           </div>
 
-          {/* Right: offers panel */}
           <div className="lg:col-span-3">
             {selected ? (
-              <AdminOffersPanel
-                propertyId={selected.id}
-                propertyAddress={selected.address}
-                onAccepted={refreshAll}
-              />
+              <AdminOffersPanel propertyId={selected.id} propertyAddress={selected.address} onAccepted={refreshAll} />
             ) : (
               <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-white/70">
                 Select a property to view offers.
@@ -408,7 +413,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* =============== VIEW: INBOX =============== */}
       {view === "inbox" && (
         <div className="mt-6 rounded-2xl border border-white/10 overflow-hidden">
           <div className="px-4 py-3 border-b border-white/10 bg-white/5 flex items-center justify-between">
@@ -498,6 +502,8 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {view === "users" && <AdminUsersPanel />}
 
       <AdminCreatePropertyModal
         open={createOpen}
