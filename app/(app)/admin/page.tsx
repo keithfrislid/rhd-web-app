@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import AdminOffersPanel from "@/components/AdminOffersPanel"
 import AdminCreatePropertyModal from "@/components/AdminCreatePropertyModal"
+import EditPropertyModal from "@/components/EditPropertyModal"
 import AdminUsersPanel from "@/components/AdminUsersPanel"
 import { formatMoney } from "@/lib/properties"
 import { isCurrentUserAdmin } from "@/lib/admin"
@@ -13,11 +14,16 @@ type PropertyRow = {
   id: string
   address: string
   status: "New" | "Price Drop" | "Under Contract"
+  photo_url: string | null
   price: number
   beds: number
   baths: number
+  sqft: number
+  acres: number
   arv: number
   repairs: number
+  lat: number
+  lng: number
   created_at: string
   is_accepting_offers?: boolean
   accepted_offer_id?: string | null
@@ -75,6 +81,7 @@ export default function AdminPage() {
 
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteBusy, setDeleteBusy] = useState<string | null>(null)
+  const [editingProperty, setEditingProperty] = useState<PropertyRow | null>(null)
 
   const selected = useMemo(
     () => properties.find((p) => p.id === selectedId) ?? null,
@@ -96,7 +103,7 @@ export default function AdminPage() {
     const { data, error } = await supabase
       .from("properties")
       .select(
-        "id,address,status,price,beds,baths,arv,repairs,created_at,is_accepting_offers,accepted_offer_id"
+        "id,address,status,photo_url,price,beds,baths,sqft,acres,arv,repairs,lat,lng,created_at,is_accepting_offers,accepted_offer_id"
       )
       .order("created_at", { ascending: false })
 
@@ -405,17 +412,26 @@ export default function AdminPage() {
                           ID: {p.id.slice(0, 6)}…{p.id.slice(-4)}
                         </div>
 
-                        <button
-                          onClick={() => deleteProperty(p.id, p.address)}
-                          disabled={deleteBusy === p.id}
-                          className={`rounded-xl px-3 py-1.5 text-xs font-semibold border transition ${
-                            deleteBusy === p.id
-                              ? "border-white/10 bg-white/5 text-white/60 cursor-not-allowed"
-                              : "border-red-400/30 bg-red-500/10 text-red-200 hover:bg-red-500/15"
-                          }`}
-                        >
-                          {deleteBusy === p.id ? "Deleting…" : "Delete"}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => setEditingProperty(p)}
+                            className="rounded-xl px-3 py-1.5 text-xs font-semibold border border-sky-400/25 bg-sky-500/10 text-sky-200 hover:bg-sky-500/15 transition"
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            onClick={() => deleteProperty(p.id, p.address)}
+                            disabled={deleteBusy === p.id}
+                            className={`rounded-xl px-3 py-1.5 text-xs font-semibold border transition ${
+                              deleteBusy === p.id
+                                ? "border-white/10 bg-white/5 text-white/60 cursor-not-allowed"
+                                : "border-red-400/30 bg-red-500/10 text-red-200 hover:bg-red-500/15"
+                            }`}
+                          >
+                            {deleteBusy === p.id ? "Deleting…" : "Delete"}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )
@@ -533,6 +549,14 @@ export default function AdminPage() {
         onClose={() => setCreateOpen(false)}
         onCreated={refreshAll}
       />
+
+      {editingProperty && (
+        <EditPropertyModal
+          property={editingProperty}
+          onClose={() => setEditingProperty(null)}
+          onSaved={refreshAll}
+        />
+      )}
     </main>
   )
 }
