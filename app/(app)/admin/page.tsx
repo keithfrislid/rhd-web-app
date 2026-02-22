@@ -39,11 +39,6 @@ type PendingOfferRow = {
   } | null
 }
 
-type ProfileRow = {
-  user_id: string
-  role: string
-}
-
 type AdminView = "properties" | "inbox" | "users"
 
 function spread(p: { arv: number; price: number; repairs: number }) {
@@ -165,19 +160,38 @@ export default function AdminPage() {
   const loadPendingUsersCount = async () => {
     setUsersLoading(true)
 
-    const { data, error } = await supabase
-      .from("profiles")
-      .select("user_id,role")
-      .eq("role", "pending")
+    // IMPORTANT:
+    // The AdminUsersPanel loads pending users through the `admin-users` Edge Function.
+    // Doing a direct `profiles` select here can return 0 due to RLS, even for admins.
+    // So we count pending users via the same Edge Function to keep the badge correct.
+    try {
+      const { data } = await supabase.auth.getSession()
+      const token = data.session?.access_token
+      if (!token) throw new Error("No session")
 
-    if (error) {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-users`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      )
+
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json?.error || `Request failed (${res.status})`)
+
+      const users = Array.isArray(json?.users) ? json.users : []
+      const pending = users.filter((u: any) => u?.role === "pending")
+      setPendingUsersCount(pending.length)
+    } catch {
+      // Fallback to 0 if anything goes wrong.
       setPendingUsersCount(0)
+    } finally {
       setUsersLoading(false)
-      return
     }
-
-    setPendingUsersCount((data ?? []).length)
-    setUsersLoading(false)
   }
 
   const refreshAll = async () => {
@@ -208,7 +222,9 @@ export default function AdminPage() {
     let cancelled = false
 
     const run = async () => {
-      const { data: { user } } = await supabase.auth.getUser()
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
       const adminOk = await isCurrentUserAdmin(user?.id ?? undefined)
 
       if (!adminOk) {
@@ -234,6 +250,13 @@ export default function AdminPage() {
     const handler = () => loadInbox()
     window.addEventListener("rhd:offers-changed", handler)
     return () => window.removeEventListener("rhd:offers-changed", handler)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  useEffect(() => {
+    const handler = () => loadPendingUsersCount()
+    window.addEventListener("rhd:users-changed", handler)
+    return () => window.removeEventListener("rhd:users-changed", handler)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 

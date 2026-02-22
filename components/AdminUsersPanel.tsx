@@ -23,6 +23,8 @@ export default function AdminUsersPanel() {
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
 
+  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+
   const pending = useMemo(() => users.filter((u) => u.role === "pending"), [users]);
 
   const callAdminUsers = async (path: string, init?: RequestInit) => {
@@ -30,14 +32,17 @@ export default function AdminUsersPanel() {
     const token = data.session?.access_token;
     if (!token) throw new Error("No session");
 
-    const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-users${path}`, {
-      ...init,
-      headers: {
-        ...(init?.headers || {}),
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    });
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-users${path}`,
+      {
+        ...init,
+        headers: {
+          ...(init?.headers || {}),
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
 
     const json = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(json?.error || `Request failed (${res.status})`);
@@ -66,11 +71,39 @@ export default function AdminUsersPanel() {
     if (busyId) return;
     setBusyId(userId);
     setErrorMsg(null);
+    setSuccessMsg(null);
+
     try {
-      await callAdminUsers("", { method: "POST", body: JSON.stringify({ user_id: userId }) });
+      const json = await callAdminUsers("", {
+        method: "POST",
+        body: JSON.stringify({ user_id: userId }),
+      });
+
+      const approved = json?.approved as PendingUser | undefined;
+      const emailSent = !!json?.email_sent;
+      const emailError = json?.email_error ? String(json.email_error) : null;
+
+      const name =
+        `${approved?.first_name ?? ""} ${approved?.last_name ?? ""}`.trim() ||
+        approved?.email ||
+        shortId(userId);
+
+      if (emailSent) {
+        setSuccessMsg(`Approved ${name}. Approval email sent.`);
+      } else if (emailError) {
+        setSuccessMsg(`Approved ${name}. Email not sent (${emailError}).`);
+      } else {
+        setSuccessMsg(`Approved ${name}.`);
+      }
+
+      // Reload list
       await load();
-      // Let Admin page re-count
+
+      // Let Admin page re-count badge
       window.dispatchEvent(new Event("rhd:users-changed"));
+
+      // Auto-clear success message after a few seconds
+      setTimeout(() => setSuccessMsg(null), 4500);
     } catch (e: any) {
       setErrorMsg(e?.message ?? "Approve failed");
     } finally {
@@ -84,7 +117,8 @@ export default function AdminUsersPanel() {
         <div>
           <div className="text-sm font-semibold">Approve Users</div>
           <div className="mt-0.5 text-xs text-white/60">
-            Pending requests: <span className="text-white/80 font-semibold">{pending.length}</span>
+            Pending requests:{" "}
+            <span className="text-white/80 font-semibold">{pending.length}</span>
           </div>
         </div>
 
@@ -95,6 +129,12 @@ export default function AdminUsersPanel() {
           Refresh
         </button>
       </div>
+
+      {successMsg && (
+        <div className="m-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-200">
+          {successMsg}
+        </div>
+      )}
 
       {errorMsg && (
         <div className="m-4 rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
@@ -169,7 +209,7 @@ export default function AdminUsersPanel() {
       )}
 
       <div className="p-4 text-xs text-white/50 border-t border-white/10">
-        Approving changes role from <b>pending</b> → <b>buyer</b>.
+        Approving changes role from <b>pending</b> → <b>buyer</b> and attempts to send an approval email.
       </div>
     </div>
   );

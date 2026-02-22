@@ -17,8 +17,9 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let cancelled = false;
+    let intervalId: ReturnType<typeof setInterval> | null = null;
 
-    const load = async () => {
+    const resolveRole = async () => {
       const { data } = await supabase.auth.getSession();
       const session = data.session;
 
@@ -53,16 +54,28 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
         setRole(resolvedRole);
         setReady(true);
       }
+
+      // If user is no longer pending, stop polling
+      if (resolvedRole !== "pending" && intervalId) {
+        clearInterval(intervalId);
+        intervalId = null;
+      }
     };
 
-    load();
+    // Initial role check
+    resolveRole();
 
+    // Poll every 5s ONLY while pending (the interval will be cleared once approved)
+    intervalId = setInterval(resolveRole, 5000);
+
+    // Keep auth state handling
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) router.replace("/login");
     });
 
     return () => {
       cancelled = true;
+      if (intervalId) clearInterval(intervalId);
       sub.subscription.unsubscribe();
     };
   }, [router, pathname]);
