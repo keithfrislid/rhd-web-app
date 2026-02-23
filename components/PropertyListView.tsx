@@ -12,7 +12,11 @@ function calcSpread(p: Property) {
   return p.arv - p.price - p.repairs
 }
 
-export default function PropertyListView() {
+export default function PropertyListView({
+  includeUnderContract = false,
+}: {
+  includeUnderContract?: boolean
+}) {
   const [selected, setSelected] = useState<Property | null>(null)
   const [sortMode, setSortMode] = useState<SortMode>("newest")
   const [filterMode, setFilterMode] = useState<FilterMode>("all")
@@ -34,12 +38,12 @@ export default function PropertyListView() {
   useEffect(() => {
     const run = async () => {
       setLoading(true)
-      const rows = await fetchProperties()
+      const rows = await fetchProperties({ includeUnderContract })
       setPropertiesRaw(rows)
       setLoading(false)
     }
     run()
-  }, [])
+  }, [includeUnderContract])
 
   // Load saved property ids for this user
   const loadSavedIds = async () => {
@@ -330,6 +334,12 @@ export default function PropertyListView() {
                         {isAccepted && (
                           <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-200 font-semibold">
                             Accepted
+                          </span>
+                        )}
+
+                        {p.status === "Under Contract" && (
+                          <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-200 font-semibold">
+                            Under Contract
                           </span>
                         )}
                       </div>

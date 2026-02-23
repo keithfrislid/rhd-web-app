@@ -27,6 +27,12 @@ type PropertyRow = {
   created_at: string
   is_accepting_offers?: boolean
   accepted_offer_id?: string | null
+
+  // NEW (closure / archive)
+  is_archived?: boolean
+  closed_outcome?: "won" | "lost" | null
+  closed_reason?: string | null
+  closed_at?: string | null
 }
 
 type PendingOfferRow = {
@@ -64,7 +70,6 @@ export default function AdminPage() {
   const router = useRouter()
 
   const [checkingAdmin, setCheckingAdmin] = useState(true)
-
   const [view, setView] = useState<AdminView>("properties")
 
   const [propsLoading, setPropsLoading] = useState(true)
@@ -81,7 +86,11 @@ export default function AdminPage() {
 
   const [createOpen, setCreateOpen] = useState(false)
   const [deleteBusy, setDeleteBusy] = useState<string | null>(null)
+
   const [editingProperty, setEditingProperty] = useState<PropertyRow | null>(null)
+
+  const [closeBusy, setCloseBusy] = useState<string | null>(null)
+  const [showArchived, setShowArchived] = useState(false)
 
   const selected = useMemo(
     () => properties.find((p) => p.id === selectedId) ?? null,
@@ -100,28 +109,35 @@ export default function AdminPage() {
     setPropsLoading(true)
     setErrorMsg(null)
 
-    const { data, error } = await supabase
-      .from("properties")
-      .select(
-        "id,address,status,photo_url,price,beds,baths,sqft,acres,arv,repairs,lat,lng,created_at,is_accepting_offers,accepted_offer_id"
-      )
-      .order("created_at", { ascending: false })
+    try {
+      let q = supabase
+        .from("properties")
+        .select(
+          "id,address,status,photo_url,price,beds,baths,sqft,acres,arv,repairs,lat,lng,created_at,is_accepting_offers,accepted_offer_id,is_archived,closed_outcome,closed_reason,closed_at"
+        )
+        .order("created_at", { ascending: false })
 
-    if (error) {
-      setErrorMsg(error.message)
+      if (!showArchived) {
+        q = q.eq("is_archived", false)
+      }
+
+      const { data, error } = await q
+      if (error) throw error
+
+      const rows = (data ?? []) as PropertyRow[]
+      setProperties(rows)
+
+      if (rows.length === 0) {
+        setSelectedId(null)
+      } else if (!selectedId || !rows.some((r) => r.id === selectedId)) {
+        setSelectedId(rows[0].id)
+      }
+    } catch (e: any) {
+      setErrorMsg(e?.message ?? "Failed to load properties.")
       setProperties([])
-      setPropsLoading(false)
-      return
-    }
-
-    const rows = (data ?? []) as PropertyRow[]
-    setProperties(rows)
-    setPropsLoading(false)
-
-    if (rows.length === 0) {
       setSelectedId(null)
-    } else if (!selectedId || !rows.some((r) => r.id === selectedId)) {
-      setSelectedId(rows[0].id)
+    } finally {
+      setPropsLoading(false)
     }
   }
 
@@ -194,7 +210,6 @@ export default function AdminPage() {
       const pending = users.filter((u: any) => u?.role === "pending")
       setPendingUsersCount(pending.length)
     } catch {
-      // Fallback to 0 if anything goes wrong.
       setPendingUsersCount(0)
     } finally {
       setUsersLoading(false)
@@ -225,6 +240,54 @@ export default function AdminPage() {
     await refreshAll()
   }
 
+  const closeProperty = async (p: PropertyRow, outcome: "won" | "lost") => {
+    if (closeBusy) return
+
+    try {
+      setErrorMsg(null)
+
+      const label =
+        outcome === "won"
+          ? "CLOSE WON (Sold/Assigned)"
+          : "CLOSE LOST (DD expired / Cancelled)"
+
+      const ok = window.confirm(
+        `${label}?\n\n${p.address}\n\nThis will archive the property and hide it from buyers.`
+      )
+      if (!ok) return
+
+      let closedReason: string | null = null
+      if (outcome === "lost") {
+        closedReason =
+          window.prompt(
+            "Optional: reason (DD expired, seller cancelled, etc.)",
+            "DD expired"
+          ) ?? null
+        if (closedReason !== null) closedReason = closedReason.trim() || null
+      }
+
+      setCloseBusy(p.id)
+
+      const { error } = await supabase
+        .from("properties")
+        .update({
+          is_archived: true,
+          closed_outcome: outcome,
+          closed_at: new Date().toISOString(),
+          closed_reason: closedReason,
+        })
+        .eq("id", p.id)
+
+      if (error) throw error
+
+      await refreshAll()
+    } catch (e: any) {
+      setErrorMsg(e?.message ?? "Failed to close property.")
+    } finally {
+      setCloseBusy(null)
+    }
+  }
+
   useEffect(() => {
     let cancelled = false
 
@@ -232,8 +295,8 @@ export default function AdminPage() {
       const {
         data: { user },
       } = await supabase.auth.getUser()
-      const adminOk = await isCurrentUserAdmin(user?.id ?? undefined)
 
+      const adminOk = await isCurrentUserAdmin(user?.id ?? undefined)
       if (!adminOk) {
         router.replace("/dashboard")
         return
@@ -252,6 +315,12 @@ export default function AdminPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
+
+  // When toggling Show Archived, reload properties
+  useEffect(() => {
+    if (!checkingAdmin) loadProperties()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showArchived])
 
   useEffect(() => {
     const handler = () => loadInbox()
@@ -288,7 +357,9 @@ export default function AdminPage() {
             <button
               onClick={() => setView("properties")}
               className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                view === "properties" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
+                view === "properties"
+                  ? "bg-white text-black"
+                  : "text-white/70 hover:bg-white/10"
               }`}
             >
               Properties
@@ -297,7 +368,9 @@ export default function AdminPage() {
             <button
               onClick={() => setView("inbox")}
               className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                view === "inbox" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
+                view === "inbox"
+                  ? "bg-white text-black"
+                  : "text-white/70 hover:bg-white/10"
               }`}
             >
               Pending Offers{" "}
@@ -309,7 +382,9 @@ export default function AdminPage() {
             <button
               onClick={() => setView("users")}
               className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
-                view === "users" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
+                view === "users"
+                  ? "bg-white text-black"
+                  : "text-white/70 hover:bg-white/10"
               }`}
             >
               Approve Users{" "}
@@ -347,10 +422,23 @@ export default function AdminPage() {
         <div className="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-4">
           <div className="lg:col-span-2 rounded-2xl border border-white/10 overflow-hidden">
             <div className="px-4 py-3 border-b border-white/10 bg-white/5">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-3">
                 <div className="text-sm font-semibold">Properties</div>
-                <div className="text-xs text-white/60">
-                  {propsLoading ? "Loading…" : `${properties.length} total`}
+
+                <div className="flex items-center gap-3">
+                  <label className="flex items-center gap-2 text-xs text-white/70">
+                    <input
+                      type="checkbox"
+                      checked={showArchived}
+                      onChange={(e) => setShowArchived(e.target.checked)}
+                      className="accent-white"
+                    />
+                    Show archived
+                  </label>
+
+                  <div className="text-xs text-white/60">
+                    {propsLoading ? "Loading…" : `${properties.length} total`}
+                  </div>
                 </div>
               </div>
             </div>
@@ -359,7 +447,8 @@ export default function AdminPage() {
               <div className="p-4 text-sm text-white/70">Loading properties…</div>
             ) : properties.length === 0 ? (
               <div className="p-4 text-sm text-white/70">
-                No properties found. Click <span className="font-semibold">+ Add Property</span>.
+                No properties found. Click{" "}
+                <span className="font-semibold">+ Add Property</span>.
               </div>
             ) : (
               <div className="divide-y divide-white/10">
@@ -367,19 +456,30 @@ export default function AdminPage() {
                   const active = p.id === selectedId
                   const isLocked = p.is_accepting_offers === false || !!p.accepted_offer_id
                   const pendingForProp = pendingCountByProperty.get(p.id) ?? 0
+                  const isArchived = !!p.is_archived
 
                   return (
                     <div
                       key={p.id}
-                      className={`px-4 py-3 transition ${active ? "bg-white/10" : "hover:bg-white/5"}`}
+                      className={`px-4 py-3 transition ${
+                        active ? "bg-white/10" : "hover:bg-white/5"
+                      }`}
                     >
-                      <button type="button" onClick={() => setSelectedId(p.id)} className="w-full text-left">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedId(p.id)}
+                        className="w-full text-left"
+                      >
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0">
-                            <div className="font-semibold truncate">{p.address}</div>
+                            <div className="font-semibold truncate">
+                              {p.address}
+                            </div>
+
                             <div className="mt-0.5 text-xs text-white/60">
                               {p.beds} bd • {p.baths} ba • {formatMoney(p.price)}
                             </div>
+
                             <div className="mt-1 text-xs text-white/60">
                               Spread:{" "}
                               <span className="text-white/80 font-semibold">
@@ -389,7 +489,8 @@ export default function AdminPage() {
 
                             {pendingForProp > 0 && (
                               <div className="mt-2 inline-flex items-center gap-2 rounded-full border border-sky-400/25 bg-sky-500/10 px-2 py-1 text-[11px] font-semibold text-sky-200">
-                                {pendingForProp} pending offer{pendingForProp === 1 ? "" : "s"}
+                                {pendingForProp} pending offer
+                                {pendingForProp === 1 ? "" : "s"}
                               </div>
                             )}
                           </div>
@@ -398,6 +499,13 @@ export default function AdminPage() {
                             <span className="text-[11px] rounded-full border border-white/15 bg-black/30 px-2 py-1 text-white/70 font-semibold">
                               {p.status}
                             </span>
+
+                            {isArchived && (
+                              <span className="text-[11px] rounded-full border border-white/10 bg-white/5 px-2 py-1 text-white/60 font-semibold">
+                                Archived
+                              </span>
+                            )}
+
                             {isLocked && (
                               <span className="text-[11px] rounded-full border border-white/10 bg-white/5 px-2 py-1 text-white/60 font-semibold">
                                 Locked
@@ -412,12 +520,38 @@ export default function AdminPage() {
                           ID: {p.id.slice(0, 6)}…{p.id.slice(-4)}
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap justify-end">
                           <button
                             onClick={() => setEditingProperty(p)}
                             className="rounded-xl px-3 py-1.5 text-xs font-semibold border border-sky-400/25 bg-sky-500/10 text-sky-200 hover:bg-sky-500/15 transition"
                           >
                             Edit
+                          </button>
+
+                          <button
+                            onClick={() => closeProperty(p, "won")}
+                            disabled={closeBusy === p.id}
+                            className={`rounded-xl px-3 py-1.5 text-xs font-semibold border transition ${
+                              closeBusy === p.id
+                                ? "border-white/10 bg-white/5 text-white/60 cursor-not-allowed"
+                                : "border-emerald-400/25 bg-emerald-500/10 text-emerald-200 hover:bg-emerald-500/15"
+                            }`}
+                            title="Close Won (Sold/Assigned) — archives and hides from buyers"
+                          >
+                            {closeBusy === p.id ? "Closing…" : "Close Won"}
+                          </button>
+
+                          <button
+                            onClick={() => closeProperty(p, "lost")}
+                            disabled={closeBusy === p.id}
+                            className={`rounded-xl px-3 py-1.5 text-xs font-semibold border transition ${
+                              closeBusy === p.id
+                                ? "border-white/10 bg-white/5 text-white/60 cursor-not-allowed"
+                                : "border-amber-400/25 bg-amber-500/10 text-amber-200 hover:bg-amber-500/15"
+                            }`}
+                            title="Close Lost (DD expired/Cancelled) — archives and hides from buyers"
+                          >
+                            {closeBusy === p.id ? "Closing…" : "Close Lost"}
                           </button>
 
                           <button
@@ -442,7 +576,11 @@ export default function AdminPage() {
 
           <div className="lg:col-span-3">
             {selected ? (
-              <AdminOffersPanel propertyId={selected.id} propertyAddress={selected.address} onAccepted={refreshAll} />
+              <AdminOffersPanel
+                propertyId={selected.id}
+                propertyAddress={selected.address}
+                onAccepted={refreshAll}
+              />
             ) : (
               <div className="rounded-2xl border border-white/10 bg-white/5 p-6 text-sm text-white/70">
                 Select a property to view offers.
@@ -516,7 +654,9 @@ export default function AdminPage() {
                         </td>
 
                         <td className="px-4 py-3">
-                          <span className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-semibold ${deltaTone}`}>
+                          <span
+                            className={`inline-flex items-center rounded-full border px-2 py-1 text-xs font-semibold ${deltaTone}`}
+                          >
                             {formatDelta(d)}
                           </span>
                         </td>

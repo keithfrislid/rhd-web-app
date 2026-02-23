@@ -16,6 +16,10 @@ export type Property = {
   lng: number
   photoUrl: string
   status: PropertyStatus
+  isArchived?: boolean
+  closedOutcome?: "won" | "lost" | null
+  closedAt?: string | null
+  closedReason?: string | null
 
   // Offer controls (v1)
   offerDeadline?: string | null
@@ -27,13 +31,23 @@ export function formatMoney(n: number) {
   return `$${n.toLocaleString()}`
 }
 
-export async function fetchProperties(): Promise<Property[]> {
-  const { data, error } = await supabase
+export async function fetchProperties(opts?: { includeUnderContract?: boolean }): Promise<Property[]> {
+  const includeUnderContract = !!opts?.includeUnderContract
+
+  let q = supabase
     .from("properties")
     .select(
-      "id,address,price,beds,baths,sqft,acres,arv,repairs,lat,lng,photo_url,status,offer_deadline,is_accepting_offers,accepted_offer_id"
+      "id,address,price,beds,baths,sqft,acres,arv,repairs,lat,lng,photo_url,status,offer_deadline,is_accepting_offers,accepted_offer_id,is_archived,closed_outcome,closed_at,closed_reason"
     )
+    .eq("is_archived", false)
     .order("created_at", { ascending: false })
+
+  // Default buyer view: hide Under Contract unless explicitly toggled on
+  if (!includeUnderContract) {
+    q = q.neq("status", "Under Contract")
+  }
+
+  const { data, error } = await q
 
   if (error) {
     console.warn("fetchProperties error:", error.message)
@@ -59,5 +73,10 @@ export async function fetchProperties(): Promise<Property[]> {
     isAcceptingOffers:
       typeof row.is_accepting_offers === "boolean" ? row.is_accepting_offers : true,
     acceptedOfferId: row.accepted_offer_id ?? null,
+
+    isArchived: !!row.is_archived,
+    closedOutcome: (row.closed_outcome as "won" | "lost" | null) ?? null,
+    closedAt: row.closed_at ?? null,
+    closedReason: row.closed_reason ?? null,
   }))
 }

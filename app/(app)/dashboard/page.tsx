@@ -17,6 +17,7 @@ type ViewMode = "map" | "list"
 
 export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("map")
+  const [showUnderContract, setShowUnderContract] = useState(false)
 
   return (
     <main className="w-full">
@@ -46,11 +47,25 @@ export default function DashboardPage() {
           >
             List
           </button>
+
+          <label className="flex items-center gap-2 rounded-xl border border-white/20 px-3 py-2 text-sm text-white/80 hover:bg-white/5 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={showUnderContract}
+              onChange={(e) => setShowUnderContract(e.target.checked)}
+              className="accent-white"
+            />
+            Show Under Contract
+          </label>
         </div>
       </div>
 
       <div className="mt-6">
-        {viewMode === "map" ? <LeafletMap /> : <PropertyListView />}
+        {viewMode === "map" ? (
+          <LeafletMap includeUnderContract={showUnderContract} />
+        ) : (
+          <PropertyListView includeUnderContract={showUnderContract} />
+        )}
       </div>
     </main>
   )
