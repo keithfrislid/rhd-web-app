@@ -11,6 +11,7 @@ import { useAdminData, type AdminView, type PropertyRow } from "@/lib/hooks/useA
 import AdminHeaderTabs from "@/components/admin/AdminHeaderTabs"
 import AdminPropertiesPanel from "@/components/admin/AdminPropertiesPanel"
 import AdminInboxPanel from "@/components/admin/AdminInboxPanel"
+import AdminBuyBoxesPanel from "@/components/admin/AdminBuyBoxesPanel"
 
 export default function AdminPage() {
   const router = useRouter()
@@ -199,6 +200,8 @@ export default function AdminPage() {
       )}
 
       {view === "users" && <AdminUsersPanel />}
+
+      {view === "buyboxes" && <AdminBuyBoxesPanel />}
 
       <AdminCreatePropertyModal
         open={createOpen}
