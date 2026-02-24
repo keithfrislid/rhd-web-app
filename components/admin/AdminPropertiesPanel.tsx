@@ -245,11 +245,6 @@ export default function AdminPropertiesPanel({
                         >
                           {badge.label}
                         </span>
-
-                        {/* Info-only status (New / Price Drop / Under Contract) */}
-                        <span className="text-[11px] rounded-full border border-white/15 bg-white/5 px-2 py-1 text-white/60 font-semibold">
-                          {p.status}
-                        </span>
                       </div>
                     </div>
                   </button>

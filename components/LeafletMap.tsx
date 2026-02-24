@@ -3,6 +3,9 @@
 import { useEffect, useRef, useState } from "react"
 import "leaflet/dist/leaflet.css"
 
+import { useMemo } from "react"
+import { useViewedProperties } from "@/lib/hooks/useViewedProperties"
+
 import DealSheetPanel from "@/components/DealSheetPanel"
 import { fetchProperties, type Property, formatMoney } from "@/lib/properties"
 
@@ -18,6 +21,9 @@ export default function LeafletMap({
   const [selected, setSelected] = useState<Property | null>(null)
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
+
+  const propertyIds = useMemo(() => properties.map((p) => p.id), [properties])
+  const { viewedIds, viewedLoading, markViewed } = useViewedProperties(propertyIds)
 
   // 1) Fetch properties (refetch when toggle changes)
   useEffect(() => {
@@ -117,13 +123,17 @@ export default function LeafletMap({
 
       if (!properties || properties.length === 0) return
 
-      const pinColorFor = (status: string) => {
-        if (status === "Under Contract") return "#f59e0b" // muted orange
+      const pinColorFor = (property: Property) => {
+        // If viewed, make it dark (regardless of status)
+        if (!viewedLoading && viewedIds.has(property.id)) return "#111827" // near-black/navy
+
+        // Otherwise normal lifecycle colors
+        if (property.status === "Under Contract") return "#f59e0b" // muted orange
         return "#ef4444" // red
       }
 
       properties.forEach((property) => {
-        const pinColor = pinColorFor(property.status)
+        const pinColor = pinColorFor(property)
 
         const pinSvg = `
           <svg width="34" height="34" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -170,7 +180,7 @@ export default function LeafletMap({
           <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:6px;">
             <div style="font-weight:650; line-height:1.2;">${property.address}</div>
             <div style="
-              display:${property.status === "New" ? "inline-flex" : "none"};
+              display:${property.status === "New" && !( !viewedLoading && viewedIds.has(property.id) ) ? "inline-flex" : "none"};
               font-size:11px;
               padding:4px 8px;
               border-radius:9999px;
@@ -217,7 +227,7 @@ export default function LeafletMap({
     return () => {
       cancelled = true
     }
-  }, [properties])
+  }, [properties, viewedIds, viewedLoading])
 
   // 4) Remove map only on unmount
   useEffect(() => {
@@ -247,7 +257,14 @@ export default function LeafletMap({
       {selected && (
         <div className="absolute left-0 right-0 bottom-0 md:right-4 md:left-auto md:top-4 md:bottom-auto md:w-[400px] z-[2000] pointer-events-auto">
           <div className="mx-3 md:mx-0">
-            <DealSheetPanel selected={selected} onClose={() => setSelected(null)} />
+            <DealSheetPanel
+              selected={selected}
+              onClose={() => {
+                markViewed(selected.id)
+                setSelected(null)
+              }}
+              isViewed={viewedIds.has(selected.id)}
+            />
           </div>
         </div>
       )}

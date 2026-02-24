@@ -5,6 +5,8 @@ import DealSheetPanel from "@/components/DealSheetPanel"
 import { fetchProperties, formatMoney, type Property } from "@/lib/properties"
 import { supabase } from "@/lib/supabase"
 
+import { useViewedProperties } from "@/lib/hooks/useViewedProperties"
+
 type SortMode = "newest" | "price" | "spread"
 type FilterMode = "all" | "saved" | "pending"
 
@@ -32,6 +34,7 @@ export default function PropertyListView({
 
   const [acceptedOfferIds, setAcceptedOfferIds] = useState<Set<string>>(new Set())
   const [acceptedLoading, setAcceptedLoading] = useState(true)
+
 
 
   // Load properties
@@ -197,6 +200,9 @@ export default function PropertyListView({
     return copy
   }, [propertiesRaw, sortMode, filterMode, savedIds, pendingOfferIds])
 
+  const visiblePropertyIds = useMemo(() => properties.map((p) => p.id), [properties])
+  const { viewedIds, viewedLoading, markViewed } = useViewedProperties(visiblePropertyIds)
+
   const activeCountLabel = loading
     ? "Loading…"
     : filterMode === "saved"
@@ -302,7 +308,9 @@ export default function PropertyListView({
                 <button
                   key={p.id}
                   type="button"
-                  onClick={() => setSelected(p)}
+                  onClick={() => {
+                    setSelected(p)
+                  }}
                   className="w-full text-left px-4 py-2.5 hover:bg-white/5 transition"
                 >
                   {/* Top: Address + pills | Spread */}
@@ -313,7 +321,7 @@ export default function PropertyListView({
                           {p.address}
                         </div>
 
-                        {p.status === "New" && (
+                        {p.status === "New" && !viewedLoading && !viewedIds.has(p.id) && (
                           <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-red-600/90 border border-red-400/40 text-white font-semibold">
                             New
                           </span>
@@ -396,7 +404,14 @@ export default function PropertyListView({
       {selected && (
         <div className="fixed inset-x-0 bottom-0 md:inset-y-0 md:right-4 md:left-auto md:top-24 md:bottom-auto md:w-[420px] z-[3000] pointer-events-auto">
           <div className="mx-3 md:mx-0">
-            <DealSheetPanel selected={selected} onClose={() => setSelected(null)} />
+            <DealSheetPanel
+              selected={selected}
+              onClose={() => {
+                markViewed(selected.id)
+                setSelected(null)
+              }}
+              isViewed={viewedIds.has(selected.id)}
+            />
           </div>
         </div>
       )}

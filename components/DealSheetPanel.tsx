@@ -34,9 +34,11 @@ function formatDeadline(ts: string | null | undefined) {
 export default function DealSheetPanel({
   selected,
   onClose,
+  isViewed = false,
 }: {
   selected: Property
   onClose: () => void
+  isViewed?: boolean
 }) {
   const spread = selected.arv - selected.price - selected.repairs
 
@@ -374,7 +376,7 @@ export default function DealSheetPanel({
               {selected.address}
             </div>
 
-            {selected.status === "New" && (
+            {selected.status === "New" && !isViewed && (
               <div className="shrink-0 text-[11px] px-2 py-1 rounded-full bg-red-600/90 border border-red-400/40 text-white font-semibold shadow-sm">
                 New
               </div>
