@@ -9,6 +9,12 @@ type OfferStatus = "pending" | "accepted" | "rejected" | "withdrawn"
 type OfferRow = {
   id: string
   user_id: string
+  buyer: {
+    user_id: string
+    email: string | null
+    first_name: string | null
+    last_name: string | null
+  } | null
   offer_price: number
   notes: string | null
   status: OfferStatus
@@ -63,21 +69,32 @@ export default function AdminOffersPanel({
     setLoading(true)
     setErrorMsg(null)
 
-    const { data, error } = await supabase
-      .from("offers")
-      .select("id,user_id,offer_price,notes,status,created_at")
-      .eq("property_id", propertyId)
-      .order("created_at", { ascending: true })
+    try {
+      const { data } = await supabase.auth.getSession()
+      const token = data.session?.access_token
+      if (!token) throw new Error("No session")
 
-    if (error) {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-offers/property/${propertyId}`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      )
+
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json?.error || `Request failed (${res.status})`)
+
+      setOffers((Array.isArray(json?.offers) ? json.offers : []) as OfferRow[])
+    } catch (e: any) {
       setOffers([])
-      setErrorMsg(error.message)
+      setErrorMsg(e?.message ?? "Failed to load offers")
+    } finally {
       setLoading(false)
-      return
     }
-
-    setOffers((data ?? []) as OfferRow[])
-    setLoading(false)
   }
 
   useEffect(() => {
@@ -188,8 +205,13 @@ export default function AdminOffersPanel({
                   </div>
 
                   <div className="mt-1 text-xs text-white/60">
-                    Buyer: {shortId(o.user_id)} •{" "}
-                    {new Date(o.created_at).toLocaleString()}
+                    Buyer:{" "}
+                    {(() => {
+                      const name = `${o.buyer?.first_name ?? ""} ${o.buyer?.last_name ?? ""}`.trim()
+                      const label = name || o.buyer?.email || shortId(o.user_id)
+                      return label
+                    })()}
+                    {o.buyer?.email ? ` (${o.buyer.email})` : ""} • {new Date(o.created_at).toLocaleString()}
                   </div>
 
                   {o.notes && (

@@ -34,7 +34,7 @@ export default function AdminHeaderTabs({
           Manage properties, review offers, and approve users.
         </p>
 
-        <div className="mt-3 inline-flex items-center gap-1 rounded-xl border border-white/15 bg-black/40 p-1">
+        <div className="mt-3 inline-flex flex-wrap items-center gap-1 rounded-xl border border-white/15 bg-black/40 p-1">
           <button
             onClick={() => setView("properties")}
             className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
@@ -66,6 +66,15 @@ export default function AdminHeaderTabs({
             <span className="ml-2 rounded-full border border-white/15 bg-white/5 px-2 py-0.5 text-[11px] font-extrabold">
               {usersLoading ? "…" : pendingUsersCount}
             </span>
+          </button>
+
+          <button
+            onClick={() => setView("buyboxes")}
+            className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+              view === "buyboxes" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
+            }`}
+          >
+            Buy Boxes
           </button>
         </div>
       </div>

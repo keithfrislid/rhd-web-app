@@ -38,6 +38,7 @@ export default function AdminInboxPanel({ inboxLoading, pendingOffers, onOpenPro
             <thead className="bg-black/30 text-xs font-semibold text-white/60">
               <tr className="border-b border-white/10">
                 <th className="px-4 py-3">Property</th>
+                <th className="px-4 py-3">Buyer</th>
                 <th className="px-4 py-3">Ask</th>
                 <th className="px-4 py-3">Offer</th>
                 <th className="px-4 py-3">Delta</th>
@@ -70,6 +71,18 @@ export default function AdminInboxPanel({ inboxLoading, pendingOffers, onOpenPro
                       </div>
                       <div className="mt-0.5 text-xs text-white/50">
                         Property ID: {o.property_id.slice(0, 6)}…{o.property_id.slice(-4)}
+                      </div>
+                    </td>
+
+                    <td className="px-4 py-3">
+                      <div className="text-white/90 font-semibold">
+                        {(() => {
+                          const name = `${o.buyer?.first_name ?? ""} ${o.buyer?.last_name ?? ""}`.trim()
+                          return name || o.buyer?.email || "—"
+                        })()}
+                      </div>
+                      <div className="mt-0.5 text-xs text-white/50">
+                        {o.buyer?.email ? o.buyer.email : `User: ${o.user_id.slice(0, 6)}…${o.user_id.slice(-4)}`}
                       </div>
                     </td>
 

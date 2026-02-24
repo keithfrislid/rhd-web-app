@@ -97,6 +97,7 @@ export default function TopNav() {
 
           <div className="hidden sm:flex items-center gap-2 ml-2">
             <NavLink href="/dashboard" label="Browse" />
+            <NavLink href="/buy-box" label="Buy Box" />
             <NavLink href="/offers" label="My Offers" />
             {isAdmin && <NavLink href="/admin" label="Admin" />}
           </div>
@@ -120,6 +121,7 @@ export default function TopNav() {
       {/* Mobile links */}
       <div className="sm:hidden px-4 pb-3 flex gap-2">
         <NavLink href="/dashboard" label="Browse" />
+        <NavLink href="/buy-box" label="Buy Box" />
         <NavLink href="/offers" label="My Offers" />
         {isAdmin && <NavLink href="/admin" label="Admin" />}
       </div>

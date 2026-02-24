@@ -34,6 +34,12 @@ export type PendingOfferRow = {
   notes: string | null
   status: "pending"
   created_at: string
+  buyer: {
+    user_id: string
+    email: string | null
+    first_name: string | null
+    last_name: string | null
+  } | null
   properties: {
     id: string
     address: string
@@ -42,7 +48,7 @@ export type PendingOfferRow = {
   } | null
 }
 
-export type AdminView = "properties" | "inbox" | "users"
+export type AdminView = "properties" | "inbox" | "users" | "buyboxes"
 
 type Params = {
   selectedId: string | null
@@ -108,39 +114,39 @@ export function useAdminData({
     setInboxLoading(true)
     setErrorMsg(null)
 
-    const { data, error } = await supabase
-      .from("offers")
-      .select(
-        `
-        id,
-        property_id,
-        user_id,
-        offer_price,
-        notes,
-        status,
-        created_at,
-        property:properties!offers_property_id_fkey (
-          id,address,price,status
-        )
-      `
+    try {
+      const { data } = await supabase.auth.getSession()
+      const token = data.session?.access_token
+      if (!token) throw new Error("No session")
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-offers/inbox`,
+        {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
       )
-      .eq("status", "pending")
-      .order("created_at", { ascending: false })
 
-    if (error) {
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json?.error || `Request failed (${res.status})`)
+
+      const rows = Array.isArray(json?.offers) ? json.offers : []
+      // Normalize property field name to `properties` (component expects it)
+      const normalized = rows.map((o: any) => ({
+        ...o,
+        properties: o.properties ?? o.property ?? null,
+      }))
+
+      setPendingOffers(normalized as PendingOfferRow[])
+    } catch (e: any) {
       setPendingOffers([])
-      setErrorMsg(error.message)
+      setErrorMsg(e?.message ?? "Failed to load inbox")
+    } finally {
       setInboxLoading(false)
-      return
     }
-
-    const rows = (data ?? []).map((o: any) => {
-      const prop = Array.isArray(o.property) ? o.property[0] ?? null : o.property ?? null
-      return { ...o, properties: prop }
-    })
-
-    setPendingOffers(rows as PendingOfferRow[])
-    setInboxLoading(false)
   }
 
   const loadPendingUsersCount = async () => {
