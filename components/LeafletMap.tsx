@@ -4,45 +4,28 @@ import { useEffect, useRef, useState } from "react"
 import "leaflet/dist/leaflet.css"
 
 import { useMemo } from "react"
-import { useViewedProperties } from "@/lib/hooks/useViewedProperties"
 
 import DealSheetPanel from "@/components/DealSheetPanel"
-import { fetchProperties, type Property, formatMoney } from "@/lib/properties"
+import { type Property, formatMoney } from "@/lib/properties"
 
 export default function LeafletMap({
-  includeUnderContract = false,
+  properties,
+  loading,
+  viewedIds,
+  viewedLoading,
+  markViewed,
 }: {
-  includeUnderContract?: boolean
+  properties: Property[]
+  loading: boolean
+  viewedIds: Set<string>
+  viewedLoading: boolean
+  markViewed: (propertyId: string) => void | Promise<void>
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapInstanceRef = useRef<any>(null)
   const markersLayerRef = useRef<any>(null)
 
   const [selected, setSelected] = useState<Property | null>(null)
-  const [properties, setProperties] = useState<Property[]>([])
-  const [loading, setLoading] = useState(true)
-
-  const propertyIds = useMemo(() => properties.map((p) => p.id), [properties])
-  const { viewedIds, viewedLoading, markViewed } = useViewedProperties(propertyIds)
-
-  // 1) Fetch properties (refetch when toggle changes)
-  useEffect(() => {
-    let cancelled = false
-
-    const run = async () => {
-      setLoading(true)
-      const rows = await fetchProperties({ includeUnderContract })
-      if (cancelled) return
-      setProperties(rows)
-      setLoading(false)
-    }
-
-    run()
-
-    return () => {
-      cancelled = true
-    }
-  }, [includeUnderContract])
 
   // 2) Create the map ONCE
   useEffect(() => {
@@ -118,6 +101,11 @@ export default function LeafletMap({
       const map = mapInstanceRef.current
       const layer = markersLayerRef.current
       if (!map || !layer) return
+
+      // ✅ Prevent red→black flicker on first mount:
+      // wait until viewedIds has been hydrated for this property set
+      if (loading) return
+      if (viewedLoading) return
 
       layer.clearLayers()
 
@@ -227,7 +215,7 @@ export default function LeafletMap({
     return () => {
       cancelled = true
     }
-  }, [properties, viewedIds, viewedLoading])
+  }, [properties, viewedIds, viewedLoading, loading])
 
   // 4) Remove map only on unmount
   useEffect(() => {

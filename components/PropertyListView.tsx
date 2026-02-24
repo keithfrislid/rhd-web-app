@@ -2,10 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react"
 import DealSheetPanel from "@/components/DealSheetPanel"
-import { fetchProperties, formatMoney, type Property } from "@/lib/properties"
+import { formatMoney, type Property } from "@/lib/properties"
 import { supabase } from "@/lib/supabase"
-
-import { useViewedProperties } from "@/lib/hooks/useViewedProperties"
 
 type SortMode = "newest" | "price" | "spread"
 type FilterMode = "all" | "saved" | "pending"
@@ -15,16 +13,21 @@ function calcSpread(p: Property) {
 }
 
 export default function PropertyListView({
-  includeUnderContract = false,
+  properties: propertiesRaw,
+  loading,
+  viewedIds,
+  viewedLoading,
+  markViewed,
 }: {
-  includeUnderContract?: boolean
+  properties: Property[]
+  loading: boolean
+  viewedIds: Set<string>
+  viewedLoading: boolean
+  markViewed: (propertyId: string) => void | Promise<void>
 }) {
   const [selected, setSelected] = useState<Property | null>(null)
   const [sortMode, setSortMode] = useState<SortMode>("newest")
   const [filterMode, setFilterMode] = useState<FilterMode>("all")
-
-  const [loading, setLoading] = useState(true)
-  const [propertiesRaw, setPropertiesRaw] = useState<Property[]>([])
 
   const [savedIds, setSavedIds] = useState<Set<string>>(new Set())
   const [savedLoading, setSavedLoading] = useState(true)
@@ -34,19 +37,6 @@ export default function PropertyListView({
 
   const [acceptedOfferIds, setAcceptedOfferIds] = useState<Set<string>>(new Set())
   const [acceptedLoading, setAcceptedLoading] = useState(true)
-
-
-
-  // Load properties
-  useEffect(() => {
-    const run = async () => {
-      setLoading(true)
-      const rows = await fetchProperties({ includeUnderContract })
-      setPropertiesRaw(rows)
-      setLoading(false)
-    }
-    run()
-  }, [includeUnderContract])
 
   // Load saved property ids for this user
   const loadSavedIds = async () => {
@@ -199,9 +189,6 @@ export default function PropertyListView({
 
     return copy
   }, [propertiesRaw, sortMode, filterMode, savedIds, pendingOfferIds])
-
-  const visiblePropertyIds = useMemo(() => properties.map((p) => p.id), [properties])
-  const { viewedIds, viewedLoading, markViewed } = useViewedProperties(visiblePropertyIds)
 
   const activeCountLabel = loading
     ? "Loading…"

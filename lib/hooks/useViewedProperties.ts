@@ -1,30 +1,48 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { supabase } from "@/lib/supabase"
 
 export function useViewedProperties(propertyIds: string[]) {
   const [loading, setLoading] = useState(false)
   const [viewedIds, setViewedIds] = useState<Set<string>>(new Set())
 
-  const idsKey = useMemo(() => propertyIds.slice().sort().join(","), [propertyIds])
+  // Tracks which exact "set" of IDs we have hydrated from the DB.
+  // Used to prevent first-paint flashes when propertyIds changes from [] -> [ids...].
+  const hydratedKeyRef = useRef<string>("")
 
-  // Load viewed rows for this user for the visible property set
+  // Stable key for the current propertyIds set (order-independent).
+  const idsKey = useMemo(() => {
+    if (!propertyIds || propertyIds.length === 0) return ""
+    return [...propertyIds].sort().join(",")
+  }, [propertyIds])
+
+  // If we have IDs but haven't hydrated this exact set yet, treat as loading immediately.
+  const shouldTreatAsLoading = idsKey !== "" && hydratedKeyRef.current !== idsKey
+
   useEffect(() => {
     let cancelled = false
 
     const run = async () => {
-      if (!propertyIds.length) {
+      // If there are no properties, reset and consider it hydrated.
+      if (!idsKey) {
+        hydratedKeyRef.current = ""
         setViewedIds(new Set())
+        setLoading(false)
         return
       }
 
       setLoading(true)
+
       try {
         const { data: userRes } = await supabase.auth.getUser()
         const user = userRes.user
+
+        // If not logged in, clear and consider this set hydrated (so we don't "load forever").
         if (!user) {
+          if (cancelled) return
           setViewedIds(new Set())
+          hydratedKeyRef.current = idsKey
           return
         }
 
@@ -38,19 +56,24 @@ export function useViewedProperties(propertyIds: string[]) {
         if (cancelled) return
 
         setViewedIds(new Set((data ?? []).map((r) => r.property_id)))
+        hydratedKeyRef.current = idsKey
       } catch {
-        if (!cancelled) setViewedIds(new Set())
+        if (!cancelled) {
+          setViewedIds(new Set())
+          // Mark hydrated anyway to avoid repeated "loading" flashes if the query fails transiently.
+          hydratedKeyRef.current = idsKey
+        }
       } finally {
         if (!cancelled) setLoading(false)
       }
     }
 
     run()
+
     return () => {
       cancelled = true
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [idsKey])
+  }, [idsKey, propertyIds])
 
   const markViewed = async (propertyId: string) => {
     try {
@@ -71,10 +94,14 @@ export function useViewedProperties(propertyIds: string[]) {
         { onConflict: "user_id,property_id" }
       )
     } catch {
-      // If it fails, we don't “unview” — it’s not worth the jank.
+      // If it fails, we don't “unview” — it's not worth the jank.
       // Next refresh will re-sync from DB.
     }
   }
 
-  return { viewedIds, viewedLoading: loading, markViewed }
+  return {
+    viewedIds,
+    viewedLoading: loading || shouldTreatAsLoading,
+    markViewed,
+  }
 }

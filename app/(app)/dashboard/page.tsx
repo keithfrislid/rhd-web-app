@@ -1,8 +1,10 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import PropertyListView from "@/components/PropertyListView"
+import { fetchProperties, type Property } from "@/lib/properties"
+import { useViewedProperties } from "@/lib/hooks/useViewedProperties"
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
   ssr: false,
@@ -18,6 +20,29 @@ type ViewMode = "map" | "list"
 export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("map")
   const [showUnderContract, setShowUnderContract] = useState(false)
+
+  const [properties, setProperties] = useState<Property[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    let cancelled = false
+
+    const run = async () => {
+      setLoading(true)
+      const rows = await fetchProperties({ includeUnderContract: showUnderContract })
+      if (cancelled) return
+      setProperties(rows)
+      setLoading(false)
+    }
+
+    run()
+    return () => {
+      cancelled = true
+    }
+  }, [showUnderContract])
+
+  const propertyIds = useMemo(() => properties.map((p) => p.id), [properties])
+  const { viewedIds, viewedLoading, markViewed } = useViewedProperties(propertyIds)
 
   return (
     <main className="w-full">
@@ -62,9 +87,21 @@ export default function DashboardPage() {
 
       <div className="mt-6">
         {viewMode === "map" ? (
-          <LeafletMap includeUnderContract={showUnderContract} />
+          <LeafletMap
+            properties={properties}
+            loading={loading}
+            viewedIds={viewedIds}
+            viewedLoading={viewedLoading}
+            markViewed={markViewed}
+          />
         ) : (
-          <PropertyListView includeUnderContract={showUnderContract} />
+          <PropertyListView
+            properties={properties}
+            loading={loading}
+            viewedIds={viewedIds}
+            viewedLoading={viewedLoading}
+            markViewed={markViewed}
+          />
         )}
       </div>
     </main>
