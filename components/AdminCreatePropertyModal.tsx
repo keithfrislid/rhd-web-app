@@ -62,6 +62,9 @@ export default function AdminCreatePropertyModal({
   const [arv, setArv] = useState("")
   const [repairs, setRepairs] = useState("")
 
+  const [county, setCounty] = useState("")
+  const [autoNotify, setAutoNotify] = useState(true)
+
   const [lat, setLat] = useState("")
   const [lng, setLng] = useState("")
   const [geocodedLabel, setGeocodedLabel] = useState<string | null>(null)
@@ -106,6 +109,8 @@ export default function AdminCreatePropertyModal({
     setAcres("")
     setArv("")
     setRepairs("")
+    setCounty("")
+    setAutoNotify(true)
     setLat("")
     setLng("")
     setGeocodedLabel(null)
@@ -250,6 +255,9 @@ export default function AdminCreatePropertyModal({
       lat: toNumber(lat),
       lng: toNumber(lng),
 
+      county: county.trim() || null,
+      auto_notify: autoNotify,
+
       visibility,
       vip_release_at: toIsoFromDateTimeLocal(vipReleaseLocal),
       public_release_at: toIsoFromDateTimeLocal(publicReleaseLocal),
@@ -345,6 +353,26 @@ export default function AdminCreatePropertyModal({
                 <option value="Price Drop">Price Drop</option>
                 <option value="Under Contract">Under Contract</option>
               </select>
+            </div>
+
+            <div className="rounded-xl border border-white/15 bg-black/20 p-3">
+              <label className="text-xs text-white/70">County</label>
+              <input
+                value={county}
+                onChange={(e) => setCounty(e.target.value)}
+                placeholder="e.g. Knox"
+                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
+              />
+
+              <label className="mt-3 flex items-center gap-2 text-xs text-white/70">
+                <input
+                  type="checkbox"
+                  checked={autoNotify}
+                  onChange={(e) => setAutoNotify(e.target.checked)}
+                  className="h-4 w-4"
+                />
+                Auto notify buyers when released
+              </label>
             </div>
           </div>
 

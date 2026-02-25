@@ -40,4 +40,5 @@ export const MIDDLE_TN_COUNTIES = [
   "Cumberland",
   "Clay",
   "Pickett",
+  "Knox",
 ];
