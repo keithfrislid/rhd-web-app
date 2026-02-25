@@ -19,6 +19,12 @@ export type PropertyRow = {
   is_accepting_offers?: boolean
   accepted_offer_id?: string | null
 
+  // Visibility / first dibs
+  visibility?: "public" | "vip" | "exclusive"
+  exclusive_user_id?: string | null
+  vip_release_at?: string | null
+  public_release_at?: string | null
+
   // closure / archive
   is_archived?: boolean
   closed_outcome?: "won" | "lost" | null
@@ -48,7 +54,7 @@ export type PendingOfferRow = {
   } | null
 }
 
-export type AdminView = "properties" | "inbox" | "users" | "buyboxes"
+export type AdminView = "properties" | "inbox" | "users" | "buyboxes" | "buyers"
 
 type Params = {
   selectedId: string | null
@@ -88,7 +94,7 @@ export function useAdminData({
       const { data, error } = await supabase
         .from("properties")
         .select(
-          "id,address,status,photo_url,price,beds,baths,sqft,acres,arv,repairs,lat,lng,created_at,is_accepting_offers,accepted_offer_id,is_archived,closed_outcome,closed_reason,closed_at"
+          "id,address,status,photo_url,price,beds,baths,sqft,acres,arv,repairs,lat,lng,created_at,is_accepting_offers,accepted_offer_id,is_archived,closed_outcome,closed_reason,closed_at,visibility,exclusive_user_id,vip_release_at,public_release_at"
         )
         .order("created_at", { ascending: false })
       if (error) throw error

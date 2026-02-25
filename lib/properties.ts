@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabase"
 
 export type PropertyStatus = "New" | "Price Drop" | "Under Contract"
+export type PropertyVisibility = "public" | "vip" | "exclusive"
 
 export type Property = {
   id: string
@@ -16,6 +17,13 @@ export type Property = {
   lng: number
   photoUrl: string
   status: PropertyStatus
+
+  // Visibility / First dibs
+  visibility?: PropertyVisibility
+  vipReleaseAt?: string | null
+  publicReleaseAt?: string | null
+  exclusiveUserId?: string | null
+
   isArchived?: boolean
   closedOutcome?: "won" | "lost" | null
   closedAt?: string | null
@@ -37,12 +45,11 @@ export async function fetchProperties(opts?: { includeUnderContract?: boolean })
   let q = supabase
     .from("properties")
     .select(
-      "id,address,price,beds,baths,sqft,acres,arv,repairs,lat,lng,photo_url,status,offer_deadline,is_accepting_offers,accepted_offer_id,is_archived,closed_outcome,closed_at,closed_reason"
+      "id,address,price,beds,baths,sqft,acres,arv,repairs,lat,lng,photo_url,status,offer_deadline,is_accepting_offers,accepted_offer_id,is_archived,closed_outcome,closed_at,closed_reason,visibility,vip_release_at,public_release_at,exclusive_user_id"
     )
     .eq("is_archived", false)
     .order("created_at", { ascending: false })
 
-  // Default buyer view: hide Under Contract unless explicitly toggled on
   if (!includeUnderContract) {
     q = q.neq("status", "Under Contract")
   }
@@ -68,6 +75,11 @@ export async function fetchProperties(opts?: { includeUnderContract?: boolean })
     lng: row.lng,
     photoUrl: row.photo_url ?? "https://photos.google.com/",
     status: row.status as PropertyStatus,
+
+    visibility: (row.visibility as PropertyVisibility) ?? "public",
+    vipReleaseAt: row.vip_release_at ?? null,
+    publicReleaseAt: row.public_release_at ?? null,
+    exclusiveUserId: row.exclusive_user_id ?? null,
 
     offerDeadline: row.offer_deadline ?? null,
     isAcceptingOffers:

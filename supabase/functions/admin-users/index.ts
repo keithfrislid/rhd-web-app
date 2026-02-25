@@ -111,6 +111,10 @@ Deno.serve(async (req) => {
   }
 
   try {
+    const url = new URL(req.url);
+    const pathname = url.pathname || "";
+    const isBuyersList = pathname.endsWith("/buyers");
+
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
     const SUPABASE_ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
     const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -159,8 +163,23 @@ Deno.serve(async (req) => {
     if (meErr) return json({ error: meErr.message }, 500);
     if (!me || !me.is_admin) return json({ error: "Forbidden" }, 403);
 
-    // GET -> list pending users
+    // GET -> list pending users (default) OR GET /buyers -> list buyers for rankings
     if (req.method === "GET") {
+      // GET /buyers -> list approved buyers (for VIP tier / ranking management)
+      if (isBuyersList) {
+        const { data, error } = await service
+          .from("profiles")
+          .select(
+            "user_id,email,first_name,last_name,phone,role,created_at,buyer_tier,vip_rank"
+          )
+          .eq("role", "buyer")
+          .order("created_at", { ascending: true });
+
+        if (error) return json({ error: error.message }, 500);
+        return json({ buyers: data ?? [] });
+      }
+
+      // Default GET -> pending users (used by Approve Users tab)
       const { data, error } = await service
         .from("profiles")
         .select("user_id,email,first_name,last_name,phone,role,created_at")
@@ -171,9 +190,44 @@ Deno.serve(async (req) => {
       return json({ users: data ?? [] });
     }
 
-    // POST -> approve + send approval email
+    // POST -> approve (default) OR update buyer ranking
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
+
+      // POST { action: 'update_buyer', user_id, buyer_tier, vip_rank }
+      if (body?.action === "update_buyer") {
+        const targetUserId = body?.user_id;
+        if (!targetUserId) return json({ error: "Missing body.user_id" }, 400);
+
+        const buyer_tier = body?.buyer_tier;
+        const vip_rank = body?.vip_rank;
+
+        const patch: Record<string, unknown> = {};
+        if (buyer_tier !== undefined) patch.buyer_tier = buyer_tier;
+        if (vip_rank !== undefined) patch.vip_rank = vip_rank;
+
+        if (Object.keys(patch).length === 0) {
+          return json({ error: "Nothing to update" }, 400);
+        }
+
+        // Only allow updates to approved buyers
+        const { data: updated, error } = await service
+          .from("profiles")
+          .update(patch)
+          .eq("user_id", targetUserId)
+          .eq("role", "buyer")
+          .select(
+            "user_id,email,first_name,last_name,phone,role,created_at,buyer_tier,vip_rank"
+          )
+          .maybeSingle();
+
+        if (error) return json({ error: error.message }, 500);
+        if (!updated) return json({ error: "Buyer not found" }, 404);
+
+        return json({ buyer: updated });
+      }
+
+      // Default POST -> approve + send approval email
       const targetUserId = body?.user_id;
 
       if (!targetUserId) {
@@ -216,7 +270,6 @@ Deno.serve(async (req) => {
 
           email_sent = true;
         } else {
-          // Missing recipient or env vars. Not an error for approval; just report it.
           email_sent = false;
           if (!to) email_error = "No user email on profile";
           else if (!RESEND_API_KEY || !RESEND_FROM)

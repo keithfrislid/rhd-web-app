@@ -12,6 +12,7 @@ import AdminHeaderTabs from "@/components/admin/AdminHeaderTabs"
 import AdminPropertiesPanel from "@/components/admin/AdminPropertiesPanel"
 import AdminInboxPanel from "@/components/admin/AdminInboxPanel"
 import AdminBuyBoxesPanel from "@/components/admin/AdminBuyBoxesPanel"
+import AdminBuyerRankingsPanel from "@/components/admin/AdminBuyerRankingsPanel"
 
 export default function AdminPage() {
   const router = useRouter()
@@ -202,6 +203,8 @@ export default function AdminPage() {
       {view === "users" && <AdminUsersPanel />}
 
       {view === "buyboxes" && <AdminBuyBoxesPanel />}
+
+      {view === "buyers" && <AdminBuyerRankingsPanel />}
 
       <AdminCreatePropertyModal
         open={createOpen}

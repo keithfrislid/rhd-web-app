@@ -76,6 +76,15 @@ export default function AdminHeaderTabs({
           >
             Buy Boxes
           </button>
+
+          <button
+            onClick={() => setView("buyers")}
+            className={`rounded-lg px-3 py-2 text-sm font-semibold transition ${
+              view === "buyers" ? "bg-white text-black" : "text-white/70 hover:bg-white/10"
+            }`}
+          >
+            Buyer Rankings
+          </button>
         </div>
       </div>
 
