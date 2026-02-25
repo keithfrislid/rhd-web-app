@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useState } from "react"
 import { supabase } from "@/lib/supabase"
 
+import { ModalShell } from "@/components/ui/ModalShell"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { Select } from "@/components/ui/Select"
+import { Card } from "@/components/ui/Card"
+import { cn } from "@/lib/cn"
+
 type PropertyStatus = "New" | "Price Drop" | "Under Contract"
 type Visibility = "public" | "vip" | "exclusive"
 
@@ -281,185 +288,202 @@ export default function AdminCreatePropertyModal({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[5000] flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm p-3">
-      <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-zinc-950 text-white shadow-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-white/60">Admin</div>
-            <div className="text-lg font-semibold">Add Property</div>
-          </div>
-
-          <button
+    <div className="fixed inset-0 z-[5000] flex items-end justify-center bg-black/70 p-3 backdrop-blur-sm md:items-center">
+      <ModalShell
+        title="Add Property"
+        description="Create a new deal and control its release visibility."
+        right={
+          <Button
+            variant="ghost"
             onClick={() => {
               reset()
               onClose()
             }}
-            className="rounded-xl border border-white/15 px-3 py-2 text-sm hover:bg-white/5"
           >
             Close
-          </button>
-        </div>
+          </Button>
+        }
+        footer={
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="secondary"
+              onClick={() => {
+                reset()
+                onClose()
+              }}
+            >
+              Cancel
+            </Button>
 
-        <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+            <Button variant="primary" onClick={submit} disabled={!canSubmit || saving}>
+              {saving ? "Saving…" : "Create Property"}
+            </Button>
+          </div>
+        }
+        className="overflow-hidden"
+      >
+        <div className="max-h-[80vh] space-y-4 overflow-y-auto p-5">
           {errorMsg && (
-            <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
+            <div className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-3 text-sm text-[var(--text)]">
               {errorMsg}
             </div>
           )}
 
-          {/* Address + Status */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          {/* Address + Status + County */}
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             <div className="md:col-span-2">
               <div className="flex items-end justify-between gap-2">
-                <label className="text-xs text-white/70">Address *</label>
+                <label className="text-xs text-[var(--muted)]">Address *</label>
 
-                <button
+                <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={geocodeAddress}
                   disabled={geocoding || !address.trim()}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold border transition ${
-                    geocoding || !address.trim()
-                      ? "border-white/10 bg-white/5 text-white/60 cursor-not-allowed"
-                      : "border-white/20 bg-white/10 text-white hover:bg-white/15"
-                  }`}
-                  title="Fetch coordinates from Geoapify"
+                  title="Fetch coordinates"
                 >
                   {geocoding ? "Geocoding…" : "Geocode"}
-                </button>
+                </Button>
               </div>
 
-              <input
+              <Input
                 value={address}
                 onChange={(e) => {
                   setAddress(e.target.value)
                   setGeocodedLabel(null)
                 }}
                 placeholder="123 Main St, Nashville, TN"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
+                className="mt-1"
               />
 
               {geocodedLabel && (
-                <div className="mt-1 text-[11px] text-emerald-200/80">Geocoded: {geocodedLabel}</div>
+                <div className="mt-1 text-[11px] text-[var(--success)]/90">Geocoded: {geocodedLabel}</div>
               )}
             </div>
 
             <div>
-              <label className="text-xs text-white/70">Status</label>
-              <select
+              <label className="text-xs text-[var(--muted)]">Status</label>
+              <Select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as PropertyStatus)}
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
+                className="mt-1"
               >
                 <option value="New">New</option>
                 <option value="Price Drop">Price Drop</option>
                 <option value="Under Contract">Under Contract</option>
-              </select>
+              </Select>
             </div>
 
-            <div className="rounded-xl border border-white/15 bg-black/20 p-3">
-              <label className="text-xs text-white/70">County</label>
-              <input
-                value={county}
-                onChange={(e) => setCounty(e.target.value)}
-                placeholder="e.g. Knox"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
-              />
+            <Card className="p-3 md:col-span-3">
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
+                <div className="md:col-span-2">
+                  <label className="text-xs text-[var(--muted)]">County</label>
+                  <Input
+                    value={county}
+                    onChange={(e) => setCounty(e.target.value)}
+                    placeholder="e.g. Knox"
+                    className="mt-1"
+                  />
+                </div>
 
-              <label className="mt-3 flex items-center gap-2 text-xs text-white/70">
-                <input
-                  type="checkbox"
-                  checked={autoNotify}
-                  onChange={(e) => setAutoNotify(e.target.checked)}
-                  className="h-4 w-4"
-                />
-                Auto notify buyers when released
-              </label>
-            </div>
+                <div className="flex items-end">
+                  <label className="flex items-center gap-2 text-xs text-[var(--muted)]">
+                    <input
+                      type="checkbox"
+                      checked={autoNotify}
+                      onChange={(e) => setAutoNotify(e.target.checked)}
+                      className={cn(
+                        "h-4 w-4 rounded border border-[var(--border)] bg-[var(--surface)]",
+                        "accent-[var(--accent)]"
+                      )}
+                    />
+                    Auto notify buyers when released
+                  </label>
+                </div>
+              </div>
+            </Card>
           </div>
 
           {/* First Dibs / Visibility */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center justify-between gap-3">
+          <Card className="p-4">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <div className="text-sm font-semibold">First Dibs / Visibility</div>
-                <div className="mt-0.5 text-xs text-white/60">
-                  Control who can see the deal and when.
-                </div>
+                <div className="text-sm font-semibold text-[var(--text)]">First Dibs / Visibility</div>
+                <div className="mt-0.5 text-xs text-[var(--muted)]">Control who can see the deal and when.</div>
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  onClick={() => applyPreset("public_now")}
-                  className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs hover:bg-white/10"
-                >
+                <Button type="button" variant="secondary" size="sm" onClick={() => applyPreset("public_now")}>
                   Public now
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={() => applyPreset("vip_now_public_24h")}
-                  className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs hover:bg-white/10"
                 >
                   VIP now → Public 24h
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={() => applyPreset("exclusive_now_vip_6h_public_24h")}
-                  className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs hover:bg-white/10"
                 >
                   Exclusive → VIP 6h → Public 24h
-                </button>
+                </Button>
               </div>
             </div>
 
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="mt-3 grid grid-cols-1 gap-3 md:grid-cols-3">
               <div>
-                <label className="text-xs text-white/70">Visibility</label>
-                <select
+                <label className="text-xs text-[var(--muted)]">Visibility</label>
+                <Select
                   value={visibility}
                   onChange={(e) => {
                     const v = e.target.value as Visibility
                     setVisibility(v)
                     if (v !== "exclusive") setExclusiveUserId("")
                   }}
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
+                  className="mt-1"
                 >
                   <option value="public">Public</option>
                   <option value="vip">VIP</option>
                   <option value="exclusive">Exclusive VIP</option>
-                </select>
+                </Select>
               </div>
 
               <div>
-                <label className="text-xs text-white/70">VIP release (optional)</label>
-                <input
+                <label className="text-xs text-[var(--muted)]">VIP release (optional)</label>
+                <Input
                   type="datetime-local"
                   value={vipReleaseLocal}
                   onChange={(e) => setVipReleaseLocal(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
+                  className="mt-1"
                 />
-                <div className="mt-1 text-[11px] text-white/50">Blank = VIP can see now.</div>
+                <div className="mt-1 text-[11px] text-[var(--muted)]">Blank = VIP can see now.</div>
               </div>
 
               <div>
-                <label className="text-xs text-white/70">Public release (optional)</label>
-                <input
+                <label className="text-xs text-[var(--muted)]">Public release (optional)</label>
+                <Input
                   type="datetime-local"
                   value={publicReleaseLocal}
                   onChange={(e) => setPublicReleaseLocal(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
+                  className="mt-1"
                 />
-                <div className="mt-1 text-[11px] text-white/50">Blank = Public can see now.</div>
+                <div className="mt-1 text-[11px] text-[var(--muted)]">Blank = Public can see now.</div>
               </div>
             </div>
 
             {visibility === "exclusive" && (
               <div className="mt-3">
-                <label className="text-xs text-white/70">Exclusive VIP (required)</label>
-                <select
+                <label className="text-xs text-[var(--muted)]">Exclusive VIP (required)</label>
+                <Select
                   value={exclusiveUserId}
                   onChange={(e) => setExclusiveUserId(e.target.value)}
                   disabled={vipLoading}
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
+                  className="mt-1"
                 >
                   <option value="">{vipLoading ? "Loading VIPs…" : "Select a VIP buyer…"}</option>
                   {vipBuyers.map((b) => {
@@ -471,91 +495,68 @@ export default function AdminCreatePropertyModal({
                       </option>
                     )
                   })}
-                </select>
+                </Select>
 
-                <div className="mt-1 text-[11px] text-white/50">
+                <div className="mt-1 text-[11px] text-[var(--muted)]">
                   If no VIPs appear, set someone to VIP in Buyer Rankings first.
                 </div>
               </div>
             )}
-          </div>
+          </Card>
 
           {/* Photo URL */}
           <div>
-            <label className="text-xs text-white/70">Photo URL (optional)</label>
-            <input
+            <label className="text-xs text-[var(--muted)]">Photo URL (optional)</label>
+            <Input
               value={photoUrl}
               onChange={(e) => setPhotoUrl(e.target.value)}
               placeholder="https://photos.google.com/..."
-              className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
+              className="mt-1"
             />
           </div>
 
           {/* Numbers */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
             <div>
-              <label className="text-xs text-white/70">Price *</label>
-              <input value={price} onChange={(e) => setPrice(e.target.value)} className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30" />
+              <label className="text-xs text-[var(--muted)]">Price *</label>
+              <Input value={price} onChange={(e) => setPrice(e.target.value)} className="mt-1" />
             </div>
             <div>
-              <label className="text-xs text-white/70">Beds *</label>
-              <input value={beds} onChange={(e) => setBeds(e.target.value)} className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30" />
+              <label className="text-xs text-[var(--muted)]">Beds *</label>
+              <Input value={beds} onChange={(e) => setBeds(e.target.value)} className="mt-1" />
             </div>
             <div>
-              <label className="text-xs text-white/70">Baths *</label>
-              <input value={baths} onChange={(e) => setBaths(e.target.value)} className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30" />
+              <label className="text-xs text-[var(--muted)]">Baths *</label>
+              <Input value={baths} onChange={(e) => setBaths(e.target.value)} className="mt-1" />
             </div>
             <div>
-              <label className="text-xs text-white/70">Sqft *</label>
-              <input value={sqft} onChange={(e) => setSqft(e.target.value)} className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30" />
+              <label className="text-xs text-[var(--muted)]">Sqft *</label>
+              <Input value={sqft} onChange={(e) => setSqft(e.target.value)} className="mt-1" />
             </div>
 
             <div>
-              <label className="text-xs text-white/70">Acres *</label>
-              <input value={acres} onChange={(e) => setAcres(e.target.value)} className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30" />
+              <label className="text-xs text-[var(--muted)]">Acres *</label>
+              <Input value={acres} onChange={(e) => setAcres(e.target.value)} className="mt-1" />
             </div>
             <div>
-              <label className="text-xs text-white/70">ARV *</label>
-              <input value={arv} onChange={(e) => setArv(e.target.value)} className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30" />
+              <label className="text-xs text-[var(--muted)]">ARV *</label>
+              <Input value={arv} onChange={(e) => setArv(e.target.value)} className="mt-1" />
             </div>
             <div>
-              <label className="text-xs text-white/70">Repairs *</label>
-              <input value={repairs} onChange={(e) => setRepairs(e.target.value)} className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30" />
+              <label className="text-xs text-[var(--muted)]">Repairs *</label>
+              <Input value={repairs} onChange={(e) => setRepairs(e.target.value)} className="mt-1" />
             </div>
+
             <div>
-              <label className="text-xs text-white/70">Lat / Lng</label>
+              <label className="text-xs text-[var(--muted)]">Lat / Lng</label>
               <div className="mt-1 grid grid-cols-2 gap-2">
-                <input value={lat} onChange={(e) => setLat(e.target.value)} placeholder="lat" className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30" />
-                <input value={lng} onChange={(e) => setLng(e.target.value)} placeholder="lng" className="w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30" />
+                <Input value={lat} onChange={(e) => setLat(e.target.value)} placeholder="lat" />
+                <Input value={lng} onChange={(e) => setLng(e.target.value)} placeholder="lng" />
               </div>
             </div>
           </div>
-
-          {/* Footer */}
-          <div className="pt-2 flex items-center justify-end gap-2">
-            <button
-              onClick={() => {
-                reset()
-                onClose()
-              }}
-              className="rounded-xl border border-white/15 px-4 py-2 text-sm hover:bg-white/5"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={submit}
-              disabled={!canSubmit || saving}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold border transition ${
-                !canSubmit || saving
-                  ? "border-white/10 bg-white/5 text-white/60 cursor-not-allowed"
-                  : "border-white/20 bg-white text-black hover:bg-white/90"
-              }`}
-            >
-              {saving ? "Saving…" : "Create Property"}
-            </button>
-          </div>
         </div>
-      </div>
+      </ModalShell>
     </div>
   )
 }

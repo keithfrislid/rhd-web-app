@@ -1,216 +1,281 @@
-"use client";
+"use client"
 
-import { useEffect, useMemo, useState } from "react";
-import { supabase } from "@/lib/supabase";
+import { useEffect, useMemo, useState } from "react"
+import { supabase } from "@/lib/supabase"
+
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
+import { Input } from "@/components/ui/Input"
+import { cn } from "@/lib/cn"
 
 type PendingUser = {
-  user_id: string;
-  email: string | null;
-  first_name: string | null;
-  last_name: string | null;
-  phone: string | null;
-  created_at: string;
-  role: string;
-};
+  user_id: string
+  email: string | null
+  first_name: string | null
+  last_name: string | null
+  created_at: string
+}
 
-function shortId(id: string) {
-  return `${id.slice(0, 6)}…${id.slice(-4)}`;
+type ApprovedUser = {
+  user_id: string
+  email: string | null
+  first_name: string | null
+  last_name: string | null
+  buyer_tier?: "regular" | "vip" | null
+  vip_rank?: number | null
+  created_at: string
+}
+
+function displayName(u: { first_name: string | null; last_name: string | null; email: string | null; user_id: string }) {
+  const name = `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim()
+  return name || u.email || `${u.user_id.slice(0, 6)}…${u.user_id.slice(-4)}`
 }
 
 export default function AdminUsersPanel() {
-  const [loading, setLoading] = useState(true);
-  const [users, setUsers] = useState<PendingUser[]>([]);
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [busyId, setBusyId] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true)
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [pending, setPending] = useState<PendingUser[]>([])
+  const [approved, setApproved] = useState<ApprovedUser[]>([])
 
-  const pending = useMemo(() => users.filter((u) => u.role === "pending"), [users]);
+  const [busyId, setBusyId] = useState<string | null>(null)
 
-  const callAdminUsers = async (path: string, init?: RequestInit) => {
-    const { data } = await supabase.auth.getSession();
-    const token = data.session?.access_token;
-    if (!token) throw new Error("No session");
-
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-users${path}`,
-      {
-        ...init,
-        headers: {
-          ...(init?.headers || {}),
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
-
-    const json = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(json?.error || `Request failed (${res.status})`);
-    return json;
-  };
+  const [search, setSearch] = useState("")
 
   const load = async () => {
-    setLoading(true);
-    setErrorMsg(null);
+    setLoading(true)
+    setErrorMsg(null)
+
     try {
-      const json = await callAdminUsers("", { method: "GET" });
-      setUsers((json.users ?? []) as PendingUser[]);
+      const { data } = await supabase.auth.getSession()
+      const token = data.session?.access_token
+      if (!token) throw new Error("No session")
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-users`, {
+        method: "GET",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      })
+
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json?.error || `Request failed (${res.status})`)
+
+      setPending((json?.pending ?? []) as PendingUser[])
+      setApproved((json?.approved ?? []) as ApprovedUser[])
     } catch (e: any) {
-      setErrorMsg(e?.message ?? "Failed to load users");
-      setUsers([]);
+      setPending([])
+      setApproved([])
+      setErrorMsg(e?.message ?? "Failed to load users.")
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   useEffect(() => {
-    load();
-  }, []);
+    load()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const approve = async (userId: string) => {
-    if (busyId) return;
-    setBusyId(userId);
-    setErrorMsg(null);
-    setSuccessMsg(null);
+    if (busyId) return
+    setBusyId(userId)
+    setErrorMsg(null)
 
     try {
-      const json = await callAdminUsers("", {
+      const { data } = await supabase.auth.getSession()
+      const token = data.session?.access_token
+      if (!token) throw new Error("No session")
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-users/approve`, {
         method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
         body: JSON.stringify({ user_id: userId }),
-      });
+      })
 
-      const approved = json?.approved as PendingUser | undefined;
-      const emailSent = !!json?.email_sent;
-      const emailError = json?.email_error ? String(json.email_error) : null;
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json?.error || `Approve failed (${res.status})`)
 
-      const name =
-        `${approved?.first_name ?? ""} ${approved?.last_name ?? ""}`.trim() ||
-        approved?.email ||
-        shortId(userId);
-
-      if (emailSent) {
-        setSuccessMsg(`Approved ${name}. Approval email sent.`);
-      } else if (emailError) {
-        setSuccessMsg(`Approved ${name}. Email not sent (${emailError}).`);
-      } else {
-        setSuccessMsg(`Approved ${name}.`);
-      }
-
-      // Reload list
-      await load();
-
-      // Let Admin page re-count badge
-      window.dispatchEvent(new Event("rhd:users-changed"));
-
-      // Auto-clear success message after a few seconds
-      setTimeout(() => setSuccessMsg(null), 4500);
+      await load()
     } catch (e: any) {
-      setErrorMsg(e?.message ?? "Approve failed");
+      setErrorMsg(e?.message ?? "Failed to approve user.")
     } finally {
-      setBusyId(null);
+      setBusyId(null)
     }
-  };
+  }
+
+  const deny = async (userId: string) => {
+    if (busyId) return
+    const ok = window.confirm("Deny / remove this pending user?")
+    if (!ok) return
+
+    setBusyId(userId)
+    setErrorMsg(null)
+
+    try {
+      const { data } = await supabase.auth.getSession()
+      const token = data.session?.access_token
+      if (!token) throw new Error("No session")
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-users/deny`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userId }),
+      })
+
+      const json = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(json?.error || `Deny failed (${res.status})`)
+
+      await load()
+    } catch (e: any) {
+      setErrorMsg(e?.message ?? "Failed to deny user.")
+    } finally {
+      setBusyId(null)
+    }
+  }
+
+  const filteredApproved = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return approved
+
+    return approved.filter((u) => {
+      const name = `${u.first_name ?? ""} ${u.last_name ?? ""}`.toLowerCase()
+      const email = (u.email ?? "").toLowerCase()
+      return name.includes(q) || email.includes(q) || u.user_id.toLowerCase().includes(q)
+    })
+  }, [approved, search])
 
   return (
-    <div className="mt-6 rounded-2xl border border-white/10 overflow-hidden">
-      <div className="px-4 py-3 border-b border-white/10 bg-white/5 flex items-center justify-between">
-        <div>
-          <div className="text-sm font-semibold">Approve Users</div>
-          <div className="mt-0.5 text-xs text-white/60">
-            Pending requests:{" "}
-            <span className="text-white/80 font-semibold">{pending.length}</span>
+    <div className="space-y-4">
+      {/* Header */}
+      <Card className="p-4">
+        <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+          <div>
+            <div className="text-sm font-semibold text-[var(--text)]">Users</div>
+            <div className="mt-0.5 text-xs text-[var(--muted)]">
+              Approve new buyers and review the user list.
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button variant="secondary" onClick={load}>
+              Refresh
+            </Button>
           </div>
         </div>
 
-        <button
-          onClick={load}
-          className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
-        >
-          Refresh
-        </button>
-      </div>
+        {errorMsg && (
+          <div className="mt-3 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-3 text-sm text-[var(--text)]">
+            {errorMsg}
+          </div>
+        )}
+      </Card>
 
-      {successMsg && (
-        <div className="m-4 rounded-2xl border border-emerald-400/25 bg-emerald-500/10 p-4 text-sm text-emerald-200">
-          {successMsg}
+      {/* Pending approvals */}
+      <Card className="overflow-hidden">
+        <div className="border-b border-[var(--border)] bg-[var(--surface)] p-4">
+          <div className="flex items-center justify-between">
+            <div className="text-sm font-semibold text-[var(--text)]">Pending approvals</div>
+            <Badge variant={pending.length > 0 ? "warning" : "muted"}>{pending.length}</Badge>
+          </div>
+          <div className="mt-1 text-xs text-[var(--muted)]">
+            These users signed up and are waiting for admin approval.
+          </div>
         </div>
-      )}
 
-      {errorMsg && (
-        <div className="m-4 rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
-          {errorMsg}
-        </div>
-      )}
-
-      {loading ? (
-        <div className="p-4 text-sm text-white/70">Loading users…</div>
-      ) : pending.length === 0 ? (
-        <div className="p-4 text-sm text-white/70">No pending users right now.</div>
-      ) : (
-        <div className="w-full overflow-x-auto">
-          <table className="w-full min-w-[980px] text-left text-sm">
-            <thead className="bg-black/30 text-xs font-semibold text-white/60">
-              <tr className="border-b border-white/10">
-                <th className="px-4 py-3">Name</th>
-                <th className="px-4 py-3">Email</th>
-                <th className="px-4 py-3">Phone</th>
-                <th className="px-4 py-3">Requested</th>
-                <th className="px-4 py-3">User ID</th>
-                <th className="px-4 py-3 text-right">Action</th>
-              </tr>
-            </thead>
-
-            <tbody className="divide-y divide-white/10">
+        <div className="p-4">
+          {loading ? (
+            <div className="text-sm text-[var(--muted)]">Loading…</div>
+          ) : pending.length === 0 ? (
+            <div className="text-sm text-[var(--muted)]">No pending users.</div>
+          ) : (
+            <div className="space-y-2">
               {pending.map((u) => {
-                const fullName =
-                  `${u.first_name ?? ""} ${u.last_name ?? ""}`.trim() || "—";
-
+                const busy = busyId === u.user_id
                 return (
-                  <tr key={u.user_id} className="hover:bg-white/5">
-                    <td className="px-4 py-3 font-semibold">{fullName}</td>
-                    <td className="px-4 py-3 text-white/80">{u.email ?? "—"}</td>
-                    <td className="px-4 py-3 text-white/80">{u.phone ?? "—"}</td>
-                    <td className="px-4 py-3 text-white/70">
-                      {new Date(u.created_at).toLocaleString()}
-                    </td>
-                    <td className="px-4 py-3 text-white/70">
-                      <span className="rounded-full border border-white/15 bg-black/30 px-2 py-1 text-xs font-semibold">
-                        {shortId(u.user_id)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <div className="flex justify-end gap-2">
-                        <button
-                          onClick={() => approve(u.user_id)}
-                          disabled={busyId === u.user_id}
-                          className={`rounded-xl px-3 py-2 text-sm font-semibold transition ${
-                            busyId === u.user_id
-                              ? "border border-white/10 bg-white/5 text-white/60 cursor-not-allowed"
-                              : "bg-white text-black hover:opacity-90"
-                          }`}
-                        >
-                          {busyId === u.user_id ? "Approving…" : "Approve"}
-                        </button>
-
-                        <button
-                          onClick={() => navigator.clipboard.writeText(u.user_id)}
-                          className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
-                        >
-                          Copy ID
-                        </button>
+                  <Card key={u.user_id} className="p-4">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                      <div className="min-w-0">
+                        <div className="truncate font-semibold text-[var(--text)]">{displayName(u)}</div>
+                        <div className="mt-1 text-xs text-[var(--muted)]">
+                          {u.email ? `Email: ${u.email} • ` : ""}
+                          Signed up: {new Date(u.created_at).toLocaleString()}
+                        </div>
+                        <div className="mt-1 text-[11px] text-[var(--muted)]">ID: {u.user_id}</div>
                       </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
 
-      <div className="p-4 text-xs text-white/50 border-t border-white/10">
-        Approving changes role from <b>pending</b> → <b>buyer</b> and attempts to send an approval email.
-      </div>
+                      <div className="flex flex-wrap items-center justify-end gap-2">
+                        <Button variant="primary" onClick={() => approve(u.user_id)} disabled={busy}>
+                          {busy ? "Approving…" : "Approve"}
+                        </Button>
+                        <Button variant="danger" onClick={() => deny(u.user_id)} disabled={busy}>
+                          {busy ? "Working…" : "Deny"}
+                        </Button>
+                      </div>
+                    </div>
+                  </Card>
+                )
+              })}
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Approved users */}
+      <Card className="overflow-hidden">
+        <div className="border-b border-[var(--border)] bg-[var(--surface)] p-4">
+          <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="text-sm font-semibold text-[var(--text)]">Approved users</div>
+              <div className="mt-1 text-xs text-[var(--muted)]">
+                Search and review currently approved buyers.
+              </div>
+            </div>
+
+            <div className="w-full md:w-72">
+              <Input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Search name/email/ID…" />
+            </div>
+          </div>
+        </div>
+
+        <div className="p-4">
+          {loading ? (
+            <div className="text-sm text-[var(--muted)]">Loading…</div>
+          ) : filteredApproved.length === 0 ? (
+            <div className="text-sm text-[var(--muted)]">No users match that search.</div>
+          ) : (
+            <div className="space-y-2">
+              {filteredApproved.map((u) => (
+                <Card key={u.user_id} className="p-4">
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                    <div className="min-w-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="truncate font-semibold text-[var(--text)]">{displayName(u)}</div>
+                        {(u.buyer_tier ?? "regular") === "vip" ? (
+                          <Badge variant="accent">VIP</Badge>
+                        ) : (
+                          <Badge variant="muted">Regular</Badge>
+                        )}
+                        {u.vip_rank ? <Badge variant="muted">Rank {u.vip_rank}</Badge> : null}
+                      </div>
+
+                      <div className="mt-1 text-xs text-[var(--muted)]">
+                        {u.email ? `Email: ${u.email} • ` : ""}
+                        Approved: {new Date(u.created_at).toLocaleString()}
+                      </div>
+
+                      <div className="mt-1 text-[11px] text-[var(--muted)]">ID: {u.user_id}</div>
+                    </div>
+                  </div>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-3 text-[11px] text-[var(--muted)]">
+            Buyer tier + ranking changes are managed in the Buyer Rankings tab.
+          </div>
+        </div>
+      </Card>
     </div>
-  );
+  )
 }

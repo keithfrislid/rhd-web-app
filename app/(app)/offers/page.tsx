@@ -5,6 +5,11 @@ import { supabase } from "@/lib/supabase"
 import DealSheetPanel from "@/components/DealSheetPanel"
 import { formatMoney, type Property } from "@/lib/properties"
 
+import { PageShell } from "@/components/ui/PageShell"
+import { Card } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
+
 type OfferStatus = "pending" | "accepted" | "rejected" | "withdrawn"
 
 type OfferWithProperty = {
@@ -19,30 +24,9 @@ type OfferWithProperty = {
 type Tab = "pending" | "accepted" | "rejected"
 
 function statusPill(status: OfferStatus) {
-  const base =
-    "inline-flex items-center rounded-full border px-2 py-1 text-[11px] font-semibold"
-
-  if (status === "accepted") {
-    return (
-      <span
-        className={`${base} bg-emerald-500/15 border-emerald-400/30 text-emerald-200`}
-      >
-        Accepted
-      </span>
-    )
-  }
-  if (status === "rejected") {
-    return (
-      <span className={`${base} bg-white/5 border-white/10 text-white/60`}>
-        Rejected
-      </span>
-    )
-  }
-  return (
-    <span className={`${base} bg-sky-500/15 border-sky-400/30 text-sky-200`}>
-      Pending
-    </span>
-  )
+  if (status === "accepted") return <Badge variant="success">Accepted</Badge>
+  if (status === "rejected") return <Badge variant="muted">Rejected</Badge>
+  return <Badge variant="accent">Pending</Badge>
 }
 
 function asProperty(row: any): Property {
@@ -166,194 +150,198 @@ export default function OffersPage() {
 
   return (
     <main className="w-full">
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">My Offers</h1>
-          <p className="mt-1 text-sm text-white/70">
-            Track pending, accepted, and rejected offers.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <button
-            onClick={loadOffers}
-            className="rounded-xl border border-white/20 px-3 py-2 text-sm hover:bg-white/10"
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      {/* Summary + tabs */}
-      <div className="mt-6 grid grid-cols-1 lg:grid-cols-5 gap-4">
-        <div className="lg:col-span-2 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="text-xs uppercase tracking-wide text-white/60">
-            Summary
-          </div>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <div className="rounded-xl border border-white/10 bg-black/30 p-3">
-              <div className="text-[11px] text-white/60">Pending</div>
-              <div className="mt-1 text-lg font-extrabold">
-                {summary.pending}
-              </div>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-black/30 p-3">
-              <div className="text-[11px] text-white/60">Accepted</div>
-              <div className="mt-1 text-lg font-extrabold">
-                {summary.accepted}
-              </div>
-            </div>
-            <div className="rounded-xl border border-white/10 bg-black/30 p-3">
-              <div className="text-[11px] text-white/60">Rejected</div>
-              <div className="mt-1 text-lg font-extrabold">
-                {summary.rejected}
-              </div>
-            </div>
+      <PageShell className="space-y-4">
+        {/* Header */}
+        <div className="flex flex-col gap-2 md:flex-row md:items-start md:justify-between">
+          <div>
+            <h1 className="text-2xl font-semibold text-[var(--text)]">My Offers</h1>
+            <p className="mt-1 text-sm text-[var(--muted)]">
+              Track pending, accepted, and rejected offers.
+            </p>
           </div>
 
-          <div className="mt-4 flex items-center gap-1 rounded-xl border border-white/15 bg-black/40 p-1">
-            <button
-              onClick={() => setTab("pending")}
-              className={`flex-1 rounded-lg px-2 py-2 text-sm font-semibold transition ${
-                tab === "pending"
-                  ? "bg-white text-black"
-                  : "text-white/70 hover:bg-white/10"
-              }`}
-            >
-              Pending
-            </button>
-            <button
-              onClick={() => setTab("accepted")}
-              className={`flex-1 rounded-lg px-2 py-2 text-sm font-semibold transition ${
-                tab === "accepted"
-                  ? "bg-white text-black"
-                  : "text-white/70 hover:bg-white/10"
-              }`}
-            >
-              Accepted
-            </button>
-            <button
-              onClick={() => setTab("rejected")}
-              className={`flex-1 rounded-lg px-2 py-2 text-sm font-semibold transition ${
-                tab === "rejected"
-                  ? "bg-white text-black"
-                  : "text-white/70 hover:bg-white/10"
-              }`}
-            >
-              Rejected
-            </button>
-          </div>
-
-          <div className="mt-3 text-[11px] text-white/60">
-            Offers are private. You only see your own offers and status updates.
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" onClick={loadOffers}>
+              Refresh
+            </Button>
           </div>
         </div>
 
-        {/* Offer list */}
-        <div className="lg:col-span-3 rounded-2xl border border-white/10 overflow-hidden">
-          <div className="px-4 py-3 border-b border-white/10 bg-white/5 flex items-center justify-between">
-            <div className="text-sm font-semibold">
-              {tab === "pending"
-                ? "Pending Offers"
-                : tab === "accepted"
-                ? "Accepted Offers"
-                : "Rejected Offers"}
-            </div>
-            <div className="text-xs text-white/60">
-              {fetching ? "Loading…" : `${visible.length} total`}
-            </div>
-          </div>
+        {/* Grid */}
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-5">
+          {/* Summary + Tabs */}
+          <Card className="lg:col-span-2 overflow-hidden">
+            <div className="border-b border-[var(--border)] bg-[var(--surface)] p-4">
+              <div className="text-xs uppercase tracking-wide text-[var(--muted)]">
+                Summary
+              </div>
 
-          {errorMsg && (
-            <div className="p-4 border-b border-white/10">
-              <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
-                {errorMsg}
+              <div className="mt-3 grid grid-cols-3 gap-2">
+                <Card className="p-3">
+                  <div className="text-[11px] text-[var(--muted)]">Pending</div>
+                  <div className="mt-1 text-lg font-extrabold text-[var(--text)]">
+                    {summary.pending}
+                  </div>
+                </Card>
+                <Card className="p-3">
+                  <div className="text-[11px] text-[var(--muted)]">Accepted</div>
+                  <div className="mt-1 text-lg font-extrabold text-[var(--text)]">
+                    {summary.accepted}
+                  </div>
+                </Card>
+                <Card className="p-3">
+                  <div className="text-[11px] text-[var(--muted)]">Rejected</div>
+                  <div className="mt-1 text-lg font-extrabold text-[var(--text)]">
+                    {summary.rejected}
+                  </div>
+                </Card>
+              </div>
+
+              <div className="mt-4 flex items-center gap-1 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-1">
+                <button
+                  onClick={() => setTab("pending")}
+                  className={`flex-1 rounded-lg px-2 py-2 text-sm font-semibold transition ${
+                    tab === "pending"
+                      ? "bg-[var(--accent)] text-white"
+                      : "text-[var(--text)] hover:bg-black/20"
+                  }`}
+                >
+                  Pending
+                </button>
+                <button
+                  onClick={() => setTab("accepted")}
+                  className={`flex-1 rounded-lg px-2 py-2 text-sm font-semibold transition ${
+                    tab === "accepted"
+                      ? "bg-[var(--accent)] text-white"
+                      : "text-[var(--text)] hover:bg-black/20"
+                  }`}
+                >
+                  Accepted
+                </button>
+                <button
+                  onClick={() => setTab("rejected")}
+                  className={`flex-1 rounded-lg px-2 py-2 text-sm font-semibold transition ${
+                    tab === "rejected"
+                      ? "bg-[var(--accent)] text-white"
+                      : "text-[var(--text)] hover:bg-black/20"
+                  }`}
+                >
+                  Rejected
+                </button>
+              </div>
+
+              <div className="mt-3 text-[11px] text-[var(--muted)]">
+                Offers are private. You only see your own offers and status updates.
               </div>
             </div>
-          )}
+          </Card>
 
-          {fetching ? (
-            <div className="p-4 text-sm text-white/70">Loading offers…</div>
-          ) : visible.length === 0 ? (
-            <div className="p-4 text-sm text-white/70">
-              {tab === "pending" &&
-                "No pending offers. Submit an offer from a deal sheet."}
-              {tab === "accepted" && "No accepted offers yet."}
-              {tab === "rejected" && "No rejected offers."}
+          {/* Offer list */}
+          <Card className="lg:col-span-3 overflow-hidden">
+            <div className="flex items-center justify-between border-b border-[var(--border)] bg-[var(--surface)] px-4 py-3">
+              <div className="text-sm font-semibold text-[var(--text)]">
+                {tab === "pending"
+                  ? "Pending Offers"
+                  : tab === "accepted"
+                  ? "Accepted Offers"
+                  : "Rejected Offers"}
+              </div>
+              <div className="text-xs text-[var(--muted)]">
+                {fetching ? "Loading…" : `${visible.length} total`}
+              </div>
             </div>
-          ) : (
-            <div className="divide-y divide-white/10">
-              {visible.map((o) => {
-                const p = o.property ? asProperty(o.property) : null
-                const s = p ? spread(p) : null
 
-                return (
-                  <button
-                    key={o.id}
-                    type="button"
-                    onClick={() => {
-                      if (p) setSelected(p)
-                    }}
-                    className="w-full text-left px-4 py-3 hover:bg-white/5 transition"
-                    disabled={!p}
-                    title={!p ? "Property missing (deleted)" : "Open deal sheet"}
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="font-semibold truncate">
-                            {p?.address ?? "Property unavailable"}
+            {errorMsg && (
+              <div className="border-b border-[var(--border)] p-4">
+                <div className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-3 text-sm text-[var(--text)]">
+                  {errorMsg}
+                </div>
+              </div>
+            )}
+
+            {fetching ? (
+              <div className="p-4 text-sm text-[var(--muted)]">Loading offers…</div>
+            ) : visible.length === 0 ? (
+              <div className="p-4 text-sm text-[var(--muted)]">
+                {tab === "pending" &&
+                  "No pending offers. Submit an offer from a deal sheet."}
+                {tab === "accepted" && "No accepted offers yet."}
+                {tab === "rejected" && "No rejected offers."}
+              </div>
+            ) : (
+              <div className="divide-y divide-[var(--border)]">
+                {visible.map((o) => {
+                  const p = o.property ? asProperty(o.property) : null
+                  const s = p ? spread(p) : null
+
+                  return (
+                    <button
+                      key={o.id}
+                      type="button"
+                      onClick={() => {
+                        if (p) setSelected(p)
+                      }}
+                      className="w-full text-left px-4 py-3 transition hover:bg-black/10"
+                      disabled={!p}
+                      title={!p ? "Property missing (deleted)" : "Open deal sheet"}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 min-w-0">
+                            <div className="truncate font-semibold text-[var(--text)]">
+                              {p?.address ?? "Property unavailable"}
+                            </div>
+                            {statusPill(o.status)}
                           </div>
-                          {statusPill(o.status)}
-                        </div>
 
-                        <div className="mt-1 text-xs text-white/60">
-                          Your offer:{" "}
-                          <span className="text-white/85 font-semibold">
-                            {formatMoney(o.offer_price)}
-                          </span>
-                          {" • "}
-                          {new Date(o.created_at).toLocaleString()}
+                          <div className="mt-1 text-xs text-[var(--muted)]">
+                            Your offer:{" "}
+                            <span className="font-semibold text-[var(--text)]">
+                              {formatMoney(o.offer_price)}
+                            </span>
+                            {" • "}
+                            {new Date(o.created_at).toLocaleString()}
+                          </div>
+
+                          {p && (
+                            <div className="mt-1 text-[12px] text-[var(--muted)]">
+                              {p.beds} bd • {p.baths} ba •{" "}
+                              {p.sqft.toLocaleString()} sqft • {p.acres} ac
+                            </div>
+                          )}
                         </div>
 
                         {p && (
-                          <div className="mt-1 text-[12px] text-white/70">
-                            {p.beds} bd • {p.baths} ba •{" "}
-                            {p.sqft.toLocaleString()} sqft • {p.acres} ac
+                          <div className="shrink-0 text-right">
+                            <div className="text-[11px] text-[var(--muted)]">Spread</div>
+                            <div className="text-sm font-extrabold text-[var(--text)]">
+                              {formatMoney(s ?? 0)}
+                            </div>
                           </div>
                         )}
                       </div>
 
-                      {p && (
-                        <div className="shrink-0 text-right">
-                          <div className="text-[11px] text-white/60">Spread</div>
-                          <div className="text-sm font-extrabold">
-                            {formatMoney(s ?? 0)}
-                          </div>
+                      {o.notes && (
+                        <div className="mt-2 line-clamp-2 text-sm text-[var(--muted)]">
+                          Notes: {o.notes}
                         </div>
                       )}
-                    </div>
 
-                    {o.notes && (
-                      <div className="mt-2 text-sm text-white/70 line-clamp-2">
-                        Notes: {o.notes}
+                      <div className="mt-2 text-[10px] text-[var(--muted)]">
+                        Tap to open deal sheet →
                       </div>
-                    )}
-
-                    <div className="mt-2 text-[10px] text-white/50">
-                      Tap to open deal sheet →
-                    </div>
-                  </button>
-                )
-              })}
-            </div>
-          )}
+                    </button>
+                  )
+                })}
+              </div>
+            )}
+          </Card>
         </div>
-      </div>
+      </PageShell>
 
       {/* Deal sheet overlay */}
       {selected && (
-        <div className="fixed inset-x-0 bottom-0 md:inset-y-0 md:right-4 md:left-auto md:top-24 md:bottom-auto md:w-[420px] z-[4000] pointer-events-auto">
+        <div className="fixed inset-x-0 bottom-0 z-[4000] pointer-events-auto md:inset-y-0 md:right-4 md:left-auto md:top-24 md:bottom-auto md:w-[420px]">
           <div className="mx-3 md:mx-0">
             <DealSheetPanel selected={selected} onClose={() => setSelected(null)} />
           </div>

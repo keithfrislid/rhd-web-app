@@ -3,16 +3,22 @@
 import { useEffect, useMemo, useState } from "react"
 import { useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
+
 import AdminCreatePropertyModal from "@/components/AdminCreatePropertyModal"
 import EditPropertyModal from "@/components/EditPropertyModal"
 import AdminUsersPanel from "@/components/AdminUsersPanel"
+
 import { isCurrentUserAdmin } from "@/lib/admin"
 import { useAdminData, type AdminView, type PropertyRow } from "@/lib/hooks/useAdminData"
+
 import AdminHeaderTabs from "@/components/admin/AdminHeaderTabs"
 import AdminPropertiesPanel from "@/components/admin/AdminPropertiesPanel"
 import AdminInboxPanel from "@/components/admin/AdminInboxPanel"
 import AdminBuyBoxesPanel from "@/components/admin/AdminBuyBoxesPanel"
 import AdminBuyerRankingsPanel from "@/components/admin/AdminBuyerRankingsPanel"
+
+import { PageShell } from "@/components/ui/PageShell"
+import { Card } from "@/components/ui/Card"
 
 export default function AdminPage() {
   const router = useRouter()
@@ -21,7 +27,6 @@ export default function AdminPage() {
   const [view, setView] = useState<AdminView>("properties")
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
-
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const [createOpen, setCreateOpen] = useState(false)
@@ -143,68 +148,72 @@ export default function AdminPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router])
 
-  // (Admin inventory includes closed/archived. Filtering is client-side in the panel.)
-
   if (checkingAdmin) {
     return (
       <main className="w-full">
-        <p className="text-sm text-white/70">Checking admin access…</p>
+        <PageShell>
+          <Card className="p-4">
+            <p className="text-sm text-[var(--muted)]">Checking admin access…</p>
+          </Card>
+        </PageShell>
       </main>
     )
   }
 
   return (
     <main className="w-full">
-      <AdminHeaderTabs
-        view={view}
-        setView={setView}
-        inboxLoading={inboxLoading}
-        inboxCount={pendingOffers.length}
-        usersLoading={usersLoading}
-        pendingUsersCount={pendingUsersCount}
-        onAddProperty={() => setCreateOpen(true)}
-        onRefresh={refreshAll}
-      />
-
-      {errorMsg && (
-        <div className="mt-4 rounded-2xl border border-red-400/30 bg-red-500/10 p-4 text-sm text-red-200">
-          {errorMsg}
-        </div>
-      )}
-
-      {view === "properties" && (
-        <AdminPropertiesPanel
-          propsLoading={propsLoading}
-          properties={properties}
-          selectedId={selectedId}
-          setSelectedId={setSelectedId}
-          selected={selected}
-          pendingCountByProperty={pendingCountByProperty}
-          onEdit={(p) => setEditingProperty(p)}
-          onDelete={deleteProperty}
-          onClose={closeProperty}
-          deleteBusy={deleteBusy}
-          closeBusy={closeBusy}
-          onAcceptedOffer={refreshAll}
-        />
-      )}
-
-      {view === "inbox" && (
-        <AdminInboxPanel
+      <PageShell className="space-y-4">
+        <AdminHeaderTabs
+          view={view}
+          setView={setView}
           inboxLoading={inboxLoading}
-          pendingOffers={pendingOffers}
-          onOpenProperty={(propertyId) => {
-            setView("properties")
-            setSelectedId(propertyId)
-          }}
+          inboxCount={pendingOffers.length}
+          usersLoading={usersLoading}
+          pendingUsersCount={pendingUsersCount}
+          onAddProperty={() => setCreateOpen(true)}
+          onRefresh={refreshAll}
         />
-      )}
 
-      {view === "users" && <AdminUsersPanel />}
+        {errorMsg && (
+          <Card className="border-[var(--danger)]/30 bg-[var(--danger)]/10 p-4">
+            <div className="text-sm text-[var(--text)]">{errorMsg}</div>
+          </Card>
+        )}
 
-      {view === "buyboxes" && <AdminBuyBoxesPanel />}
+        {view === "properties" && (
+          <AdminPropertiesPanel
+            propsLoading={propsLoading}
+            properties={properties}
+            selectedId={selectedId}
+            setSelectedId={setSelectedId}
+            selected={selected}
+            pendingCountByProperty={pendingCountByProperty}
+            onEdit={(p) => setEditingProperty(p)}
+            onDelete={deleteProperty}
+            onClose={closeProperty}
+            deleteBusy={deleteBusy}
+            closeBusy={closeBusy}
+            onAcceptedOffer={refreshAll}
+          />
+        )}
 
-      {view === "buyers" && <AdminBuyerRankingsPanel />}
+        {view === "inbox" && (
+          <AdminInboxPanel
+            inboxLoading={inboxLoading}
+            pendingOffers={pendingOffers}
+            onOpenProperty={(propertyId) => {
+              setView("properties")
+              setSelectedId(propertyId)
+            }}
+          />
+        )}
+
+        {view === "users" && <AdminUsersPanel />}
+
+        {view === "buyboxes" && <AdminBuyBoxesPanel />}
+
+        {view === "buyers" && <AdminBuyerRankingsPanel />}
+      </PageShell>
 
       <AdminCreatePropertyModal
         open={createOpen}
