@@ -38,7 +38,7 @@ export default function AdminHeaderTabs({
         <TabCount
           loading={inboxLoading}
           count={inboxCount}
-          tone={inboxCount > 0 ? "warn" : "muted"}
+          tone={inboxCount > 0 ? "warn" : "neutral"}
         />
       ),
     },
@@ -49,7 +49,7 @@ export default function AdminHeaderTabs({
         <TabCount
           loading={usersLoading}
           count={pendingUsersCount}
-          tone={pendingUsersCount > 0 ? "warn" : "muted"}
+          tone={pendingUsersCount > 0 ? "warn" : "neutral"}
         />
       ),
     },
@@ -115,11 +115,11 @@ function TabCount({
 }: {
   loading: boolean
   count: number
-  tone: "muted" | "warn"
+  tone: "neutral" | "warn"
 }) {
   if (loading) {
     return (
-      <Badge variant="muted" className="ml-0.5">
+      <Badge variant="outline" className="ml-0.5">
         …
       </Badge>
     )
@@ -127,7 +127,7 @@ function TabCount({
 
   if (!count) {
     return (
-      <Badge variant="muted" className="ml-0.5">
+      <Badge variant="outline" className="ml-0.5">
         0
       </Badge>
     )
@@ -136,7 +136,7 @@ function TabCount({
   // warn tone when there are pending items
   return (
     <Badge
-      variant={tone === "warn" ? "warning" : "muted"}
+      variant={tone === "warn" ? "accent" : "outline"}
       className="ml-0.5"
       title={`${count}`}
     >

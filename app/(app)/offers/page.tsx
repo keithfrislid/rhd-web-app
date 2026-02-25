@@ -25,7 +25,7 @@ type Tab = "pending" | "accepted" | "rejected"
 
 function statusPill(status: OfferStatus) {
   if (status === "accepted") return <Badge variant="success">Accepted</Badge>
-  if (status === "rejected") return <Badge variant="muted">Rejected</Badge>
+  if (status === "rejected") return <Badge variant="outline">Rejected</Badge>
   return <Badge variant="accent">Pending</Badge>
 }
 
