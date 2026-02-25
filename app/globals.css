@@ -2,12 +2,40 @@
 @import "tailwindcss";
 
 :root {
+  /*
+    Design Tokens (Phase A)
+    Keep these as the single source of truth for the app theme.
+    Components should prefer these variables over hardcoded hex colors.
+  */
+
+  /* Surfaces */
   --background: #0a0a0a;
-  --foreground: #ededed;
+  --surface: #0f0f10;
+  --surface-2: #141416;
+
+  /* Text */
+  --text: #ededed;
+  --muted: rgba(237, 237, 237, 0.7);
+
+  /* Borders */
+  --border: rgba(237, 237, 237, 0.12);
+  --border-strong: rgba(237, 237, 237, 0.22);
+
+  /* Accent + status */
+  --accent: #3b82f6; /* blue-500 */
+  --success: #22c55e; /* green-500 */
+  --warning: #f59e0b; /* amber-500 */
+  --danger: #ef4444;  /* red-500 */
+
+  /* Focus ring */
+  --ring: rgba(59, 130, 246, 0.55);
 }
 
 body {
   background: var(--background);
-  color: var(--foreground);
+  color: var(--text);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Optional helpers (use in Tailwind arbitrary values) */
+/* Example: className="bg-[var(--surface)] border border-[var(--border)]" */
