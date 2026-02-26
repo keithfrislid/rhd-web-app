@@ -1,9 +1,7 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import "leaflet/dist/leaflet.css"
-
-import { useMemo } from "react"
 
 import DealSheetPanel from "@/components/DealSheetPanel"
 import { type Property, formatMoney } from "@/lib/properties"
@@ -37,7 +35,6 @@ export default function LeafletMap({
       const L = await import("leaflet")
       if (cancelled) return
 
-      // Create map only if not exists
       if (!mapInstanceRef.current) {
         // popup styling injection once
         const styleId = "rhd-leaflet-styles"
@@ -45,26 +42,135 @@ export default function LeafletMap({
           const style = document.createElement("style")
           style.id = styleId
           style.innerHTML = `
-            .leaflet-popup-content-wrapper { border-radius: 14px; box-shadow: 0 18px 40px rgba(0,0,0,0.20); }
-            .leaflet-popup-content { margin: 12px 14px; }
-            .leaflet-popup-tip { box-shadow: 0 14px 30px rgba(0,0,0,0.12); }
+            /* Leaflet chrome */
+            .leaflet-popup-content-wrapper {
+              border-radius: 16px;
+              box-shadow: 0 18px 40px rgba(0,0,0,0.20);
+              border: 1px solid rgba(255,255,255,0.10);
+              background: #0b0f14;
+              color: rgba(255,255,255,0.92);
+              overflow: hidden;
+            }
+            .leaflet-popup-content { margin: 0; }
+            .leaflet-popup-tip {
+              box-shadow: 0 14px 30px rgba(0,0,0,0.12);
+              background: #0b0f14;
+              border: 1px solid rgba(255,255,255,0.10);
+            }
 
+            /* Popup layout */
+            .rhd-popup {
+              font-family: ui-sans-serif, system-ui;
+              min-width: 260px;
+              max-width: 320px;
+            }
+            .rhd-popup-header {
+              padding: 12px 14px;
+              border-bottom: 1px solid rgba(255,255,255,0.10);
+              background: rgba(255,255,255,0.04);
+            }
+            .rhd-popup-body {
+              padding: 12px 14px;
+            }
+            .rhd-row {
+              display:flex;
+              align-items:flex-start;
+              justify-content:space-between;
+              gap:10px;
+            }
+            .rhd-address {
+              font-weight: 750;
+              line-height: 1.2;
+              font-size: 13px;
+              overflow: hidden;
+              text-overflow: ellipsis;
+              white-space: nowrap;
+              max-width: 240px;
+            }
+            .rhd-sub {
+              margin-top: 6px;
+              font-size: 12px;
+              color: rgba(255,255,255,0.68);
+            }
+
+            /* Badges */
+            .rhd-badges { display:flex; gap:6px; flex-wrap:wrap; margin-top: 8px; }
+            .rhd-badge {
+              display:inline-flex;
+              align-items:center;
+              justify-content:center;
+              font-size:11px;
+              padding:4px 8px;
+              border-radius:9999px;
+              font-weight:800;
+              white-space:nowrap;
+              border: 1px solid rgba(255,255,255,0.10);
+              background: rgba(255,255,255,0.06);
+              color: rgba(255,255,255,0.85);
+            }
+            .rhd-badge-new {
+              background: #dc2626;
+              border-color: rgba(220,38,38,0.45);
+              color: #000;
+            }
+            .rhd-badge-uc {
+              background: rgba(245,158,11,0.18);
+              border-color: rgba(245,158,11,0.30);
+              color: #fde68a;
+            }
+            .rhd-badge-viewed {
+              background: rgba(255,255,255,0.05);
+              border-color: rgba(255,255,255,0.10);
+              color: rgba(255,255,255,0.65);
+            }
+
+            /* Price/Repairs/ARV chips (match list feel) */
+            .rhd-chips {
+              display:grid;
+              grid-template-columns: repeat(3, minmax(0, 1fr));
+              gap: 8px;
+              margin-top: 10px;
+            }
+            .rhd-chip {
+              border-radius: 12px;
+              border: 1px solid rgba(255,255,255,0.10);
+              background: rgba(255,255,255,0.04);
+              padding: 8px 8px;
+            }
+            .rhd-chip-label {
+              font-size: 10px;
+              color: rgba(255,255,255,0.62);
+              margin-bottom: 2px;
+            }
+            .rhd-chip-val {
+              font-size: 12px;
+              font-weight: 800;
+              color: rgba(255,255,255,0.92);
+            }
+
+            /* CTA */
             .rhd-popup-btn {
               display: inline-flex;
               align-items: center;
               justify-content: center;
               width: 100%;
-              margin-top: 10px;
+              margin-top: 12px;
               padding: 10px 12px;
               border-radius: 12px;
-              border: 1px solid rgba(0,0,0,0.10);
-              background: #111827;
-              color: white;
-              font-weight: 650;
+              border: 1px solid rgba(255,255,255,0.12);
+              background: rgba(255,255,255,0.92);
+              color: #000;
+              font-weight: 800;
               cursor: pointer;
               user-select: none;
             }
-            .rhd-popup-btn:hover { background: #0b1220; }
+            .rhd-popup-btn:hover { background: rgba(255,255,255,0.85); }
+
+            .rhd-hint {
+              margin-top: 8px;
+              font-size: 10px;
+              color: rgba(255,255,255,0.58);
+            }
           `
           document.head.appendChild(style)
         }
@@ -113,11 +219,11 @@ export default function LeafletMap({
 
       const pinColorFor = (property: Property) => {
         // If viewed, make it dark (regardless of status)
-        if (!viewedLoading && viewedIds.has(property.id)) return "#111827" // near-black/navy
+        if (!viewedLoading && viewedIds.has(property.id)) return "#111827"
 
         // Otherwise normal lifecycle colors
-        if (property.status === "Under Contract") return "#f59e0b" // muted orange
-        return "#ef4444" // red
+        if (property.status === "Under Contract") return "#f59e0b"
+        return "#ef4444"
       }
 
       properties.forEach((property) => {
@@ -140,56 +246,59 @@ export default function LeafletMap({
 
         const marker = L.marker([property.lat, property.lng], { icon }).addTo(layer)
 
-        const wrapper = L.DomUtil.create("div")
-        wrapper.style.fontFamily = "ui-sans-serif, system-ui"
-        wrapper.style.minWidth = "240px"
+        const isViewed = !viewedLoading && viewedIds.has(property.id)
+        const showNew = property.status === "New" && !isViewed
 
-        const underContractHtml =
+        const wrapper = L.DomUtil.create("div")
+        wrapper.className = "rhd-popup"
+
+        const underContractBadge =
           property.status === "Under Contract"
-            ? `
-              <div style="
-                display:inline-flex;
-                font-size:11px;
-                padding:4px 8px;
-                border-radius:9999px;
-                background:rgba(245,158,11,0.15);
-                border:1px solid rgba(245,158,11,0.3);
-                color:#fde68a;
-                font-weight:700;
-                white-space:nowrap;
-                margin: 0 0 6px 0;
-              ">
-                Under Contract
-              </div>
-            `
+            ? `<span class="rhd-badge rhd-badge-uc">Under Contract</span>`
             : ""
 
+        const newBadge = showNew ? `<span class="rhd-badge rhd-badge-new">New</span>` : ""
+
+        const viewedBadge = isViewed ? `<span class="rhd-badge rhd-badge-viewed">Viewed</span>` : ""
+
         wrapper.innerHTML = `
-          <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:10px; margin-bottom:6px;">
-            <div style="font-weight:650; line-height:1.2;">${property.address}</div>
-            <div style="
-              display:${property.status === "New" && !( !viewedLoading && viewedIds.has(property.id) ) ? "inline-flex" : "none"};
-              font-size:11px;
-              padding:4px 8px;
-              border-radius:9999px;
-              background:#dc2626;
-              color:#ffffff;
-              font-weight:700;
-              white-space:nowrap;
-              align-items:center;
-              justify-content:center;
-            ">
-              New
+          <div class="rhd-popup-header">
+            <div class="rhd-row">
+              <div class="rhd-address" title="${property.address}">${property.address}</div>
+              <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
+                ${newBadge}
+              </div>
+            </div>
+
+            <div class="rhd-sub">
+              ${property.beds} bd • ${property.baths} ba
+            </div>
+
+            <div class="rhd-badges">
+              ${underContractBadge}
+              ${viewedBadge}
             </div>
           </div>
 
-          ${underContractHtml}
+          <div class="rhd-popup-body">
+            <div class="rhd-chips">
+              <div class="rhd-chip">
+                <div class="rhd-chip-label">Price</div>
+                <div class="rhd-chip-val">${formatMoney(property.price)}</div>
+              </div>
+              <div class="rhd-chip">
+                <div class="rhd-chip-label">Repairs</div>
+                <div class="rhd-chip-val">${formatMoney(property.repairs)}</div>
+              </div>
+              <div class="rhd-chip">
+                <div class="rhd-chip-label">ARV</div>
+                <div class="rhd-chip-val">${formatMoney(property.arv)}</div>
+              </div>
+            </div>
 
-          <div style="font-weight:800; font-size:16px;">${formatMoney(property.price)}</div>
-          <div style="opacity:0.85; margin-top:4px;">
-            ${property.beds} Beds • ${property.baths} Baths
+            <button type="button" class="rhd-popup-btn">View Details</button>
+            <div class="rhd-hint">Tap to open deal sheet →</div>
           </div>
-          <button type="button" class="rhd-popup-btn">View Details</button>
         `
 
         L.DomEvent.disableClickPropagation(wrapper)
@@ -236,7 +345,7 @@ export default function LeafletMap({
 
       {loading && (
         <div className="absolute inset-x-0 top-3 z-[1500] flex justify-center pointer-events-none">
-          <div className="rounded-full border border-white/10 bg-black/60 px-3 py-1 text-xs text-white/70 backdrop-blur">
+          <div className="rounded-full border border-[var(--border)] bg-black/60 px-3 py-1 text-xs text-[var(--muted)] backdrop-blur">
             Loading properties…
           </div>
         </div>

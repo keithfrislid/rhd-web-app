@@ -4,6 +4,13 @@ import { useEffect, useMemo, useState } from "react"
 import DealSheetPanel from "@/components/DealSheetPanel"
 import { formatMoney, type Property } from "@/lib/properties"
 import { supabase } from "@/lib/supabase"
+import { cn } from "@/lib/cn"
+
+import { Card, CardContent, CardHeader } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
+import { Select } from "@/components/ui/Select"
+import { StatusBadge } from "@/components/ui/StatusBadge"
 
 type SortMode = "newest" | "price" | "spread"
 type FilterMode = "all" | "saved" | "pending"
@@ -131,7 +138,6 @@ export default function PropertyListView({
     setAcceptedLoading(false)
   }
 
-
   useEffect(() => {
     loadSavedIds()
     loadPendingOfferIds()
@@ -200,192 +206,182 @@ export default function PropertyListView({
 
   return (
     <div className="relative">
-      <div className="rounded-2xl border border-white/10 overflow-hidden">
-        {/* Header */}
-        <div className="px-4 py-2.5 border-b border-white/10 bg-white/5">
+      <Card className="overflow-hidden">
+        <CardHeader className="border-b border-[var(--border)] bg-[var(--surface-2)]">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <div className="text-sm font-semibold">Properties</div>
 
             <div className="flex flex-wrap items-center gap-2">
-              <div className="text-xs text-white/60">{activeCountLabel}</div>
+              <Badge variant="muted">{activeCountLabel}</Badge>
 
-              <div className="h-4 w-px bg-white/10" />
+              <div className="h-4 w-px bg-[var(--border)]" />
 
               {/* Filter */}
-              <div className="flex items-center gap-1 rounded-lg border border-white/15 bg-black/40 p-0.5">
-                <button
+              <div className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1">
+                <Button
+                  size="sm"
+                  variant={filterMode === "all" ? "primary" : "ghost"}
                   onClick={() => setFilterMode("all")}
-                  className={`rounded-md px-2 py-1 text-xs ${
-                    filterMode === "all"
-                      ? "bg-white text-black"
-                      : "text-white/70 hover:bg-white/10"
-                  }`}
+                  className="h-8 px-2"
                 >
                   All
-                </button>
-                <button
+                </Button>
+                <Button
+                  size="sm"
+                  variant={filterMode === "saved" ? "primary" : "ghost"}
                   onClick={() => setFilterMode("saved")}
-                  className={`rounded-md px-2 py-1 text-xs ${
-                    filterMode === "saved"
-                      ? "bg-white text-black"
-                      : "text-white/70 hover:bg-white/10"
-                  }`}
+                  className="h-8 px-2"
                 >
                   Saved
-                </button>
-                <button
+                </Button>
+                <Button
+                  size="sm"
+                  variant={filterMode === "pending" ? "primary" : "ghost"}
                   onClick={() => setFilterMode("pending")}
-                  className={`rounded-md px-2 py-1 text-xs ${
-                    filterMode === "pending"
-                      ? "bg-white text-black"
-                      : "text-white/70 hover:bg-white/10"
-                  }`}
+                  className="h-8 px-2"
                 >
                   Pending
-                </button>
+                </Button>
               </div>
 
-              <div className="h-4 w-px bg-white/10" />
+              <div className="h-4 w-px bg-[var(--border)]" />
 
               {/* Sort */}
-              <label className="text-xs text-white/60">Sort</label>
-              <select
-                value={sortMode}
-                onChange={(e) => setSortMode(e.target.value as SortMode)}
-                className="rounded-lg border border-white/15 bg-black/40 px-2 py-1 text-xs text-white outline-none hover:bg-black/60"
-              >
-                <option value="newest">Newest</option>
-                <option value="price">Price (low → high)</option>
-                <option value="spread">Spread (high → low)</option>
-              </select>
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-[var(--muted)]">Sort</span>
+                <Select
+                  value={sortMode}
+                  onChange={(e) => setSortMode(e.target.value as SortMode)}
+                  className="h-9 w-[190px] px-2 text-xs"
+                >
+                  <option value="newest">Newest</option>
+                  <option value="price">Price (low → high)</option>
+                  <option value="spread">Spread (high → low)</option>
+                </Select>
+              </div>
             </div>
           </div>
 
-          {(savedLoading || pendingLoading) && (
-            <div className="mt-1 text-[11px] text-white/50">
-              Syncing {savedLoading && pendingLoading ? "saved + pending…" : savedLoading ? "saved…" : "pending…"}
+          {(savedLoading || pendingLoading || acceptedLoading) && (
+            <div className="mt-1 text-[11px] text-[var(--muted)]">
+              Syncing{" "}
+              {savedLoading && pendingLoading
+                ? "saved + pending…"
+                : savedLoading
+                ? "saved…"
+                : pendingLoading
+                ? "pending…"
+                : "accepted…"}
             </div>
           )}
-        </div>
+        </CardHeader>
 
-        {/* Body */}
-        {loading ? (
-          <div className="p-4 text-sm text-white/70">Loading properties…</div>
-        ) : propertiesRaw.length === 0 ? (
-          <div className="p-4 text-sm text-white/70">
-            No properties found in Supabase.
-          </div>
-        ) : properties.length === 0 && filterMode === "saved" ? (
-          <div className="p-4 text-sm text-white/70">
-            No saved properties yet. Open a deal and hit <span className="font-semibold">Save</span>.
-          </div>
-        ) : properties.length === 0 && filterMode === "pending" ? (
-          <div className="p-4 text-sm text-white/70">
-            No pending offers yet. Open a deal and submit an offer.
-          </div>
-        ) : (
-          <div className="divide-y divide-white/10">
-            {properties.map((p) => {
-              const spread = calcSpread(p)
-              const isSaved = savedIds.has(p.id)
-              const isPending = pendingOfferIds.has(p.id)
-              const isAccepted = acceptedOfferIds.has(p.id)
+        <CardContent className="p-0">
+          {/* Body */}
+          {loading ? (
+            <div className="p-4 text-sm text-[var(--muted)]">Loading properties…</div>
+          ) : propertiesRaw.length === 0 ? (
+            <div className="p-4 text-sm text-[var(--muted)]">
+              No properties found in Supabase.
+            </div>
+          ) : properties.length === 0 && filterMode === "saved" ? (
+            <div className="p-4 text-sm text-[var(--muted)]">
+              No saved properties yet. Open a deal and hit{" "}
+              <span className="font-semibold text-[var(--text)]">Save</span>.
+            </div>
+          ) : properties.length === 0 && filterMode === "pending" ? (
+            <div className="p-4 text-sm text-[var(--muted)]">
+              No pending offers yet. Open a deal and submit an offer.
+            </div>
+          ) : (
+            <div className="divide-y divide-[var(--border)]">
+              {properties.map((p) => {
+                const spread = calcSpread(p)
+                const isSaved = savedIds.has(p.id)
+                const isPending = pendingOfferIds.has(p.id)
+                const isAccepted = acceptedOfferIds.has(p.id)
 
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  onClick={() => {
-                    setSelected(p)
-                  }}
-                  className="w-full text-left px-4 py-2.5 hover:bg-white/5 transition"
-                >
-                  {/* Top: Address + pills | Spread */}
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="font-semibold leading-snug truncate">
-                          {p.address}
+                const showNew = p.status === "New" && !viewedLoading && !viewedIds.has(p.id)
+
+                return (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => setSelected(p)}
+                    className={cn(
+                      "w-full text-left px-4 py-3 transition",
+                      "hover:bg-[var(--surface-2)]"
+                    )}
+                  >
+                    {/* Top: Address + pills | Spread */}
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="min-w-0 truncate font-semibold leading-snug text-[var(--text)]">
+                            {p.address}
+                          </div>
+
+                          {showNew && <StatusBadge kind="new" className="shrink-0" />}
+
+                          {isSaved && <StatusBadge kind="saved" className="shrink-0" />}
+
+                          {isPending && <StatusBadge kind="offer_pending" className="shrink-0" />}
+
+                          {isAccepted && <StatusBadge kind="offer_accepted" className="shrink-0" />}
+
+                          {p.status === "Under Contract" && (
+                            <StatusBadge kind="under_contract" className="shrink-0" />
+                          )}
                         </div>
 
-                        {p.status === "New" && !viewedLoading && !viewedIds.has(p.id) && (
-                          <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-red-600/90 border border-red-400/40 text-white font-semibold">
-                            New
-                          </span>
-                        )}
-
-                        {isSaved && (
-                          <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-white/80 font-semibold">
-                            Saved
-                          </span>
-                        )}
-
-                        {isPending && (
-                          <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-sky-500/15 border border-sky-400/30 text-sky-200 font-semibold">
-                            Pending
-                          </span>
-                        )}
-
-                        {isAccepted && (
-                          <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/15 border border-emerald-400/30 text-emerald-200 font-semibold">
-                            Accepted
-                          </span>
-                        )}
-
-                        {p.status === "Under Contract" && (
-                          <span className="shrink-0 text-[10px] px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/30 text-amber-200 font-semibold">
-                            Under Contract
-                          </span>
-                        )}
+                        <div className="mt-0.5 text-[12px] text-[var(--muted)]">
+                          {p.beds} bd • {p.baths} ba • {p.sqft.toLocaleString()} sqft •{" "}
+                          {p.acres} ac
+                        </div>
                       </div>
 
-                      <div className="mt-0.5 text-[12px] text-white/70">
-                        {p.beds} bd • {p.baths} ba • {p.sqft.toLocaleString()} sqft •{" "}
-                        {p.acres} ac
+                      <div className="shrink-0 text-right">
+                        <div className="text-[11px] text-[var(--muted)]">Spread</div>
+                        <div className="text-sm font-extrabold text-[var(--text)]">
+                          {formatMoney(spread)}
+                        </div>
                       </div>
                     </div>
 
-                    <div className="shrink-0 text-right">
-                      <div className="text-[11px] text-white/60">Spread</div>
-                      <div className="text-sm font-extrabold">
-                        {formatMoney(spread)}
+                    {/* Chips: Price / Repairs / ARV */}
+                    <div className="mt-2 grid grid-cols-3 gap-2">
+                      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5">
+                        <div className="text-[10px] text-[var(--muted)]">Price</div>
+                        <div className="text-[12px] font-semibold text-[var(--text)]">
+                          {formatMoney(p.price)}
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5">
+                        <div className="text-[10px] text-[var(--muted)]">Repairs</div>
+                        <div className="text-[12px] font-semibold text-[var(--text)]">
+                          {formatMoney(p.repairs)}
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5">
+                        <div className="text-[10px] text-[var(--muted)]">ARV</div>
+                        <div className="text-[12px] font-semibold text-[var(--text)]">
+                          {formatMoney(p.arv)}
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Chips: Price / Repairs / ARV */}
-                  <div className="mt-2 grid grid-cols-3 gap-2">
-                    <div className="rounded-xl border border-white/10 bg-white/5 px-2 py-1.5">
-                      <div className="text-[10px] text-white/60">Price</div>
-                      <div className="text-[12px] font-semibold">
-                        {formatMoney(p.price)}
-                      </div>
+                    <div className="mt-1.5 text-[10px] text-[var(--muted)]">
+                      Tap to open deal sheet →
                     </div>
-
-                    <div className="rounded-xl border border-white/10 bg-white/5 px-2 py-1.5">
-                      <div className="text-[10px] text-white/60">Repairs</div>
-                      <div className="text-[12px] font-semibold">
-                        {formatMoney(p.repairs)}
-                      </div>
-                    </div>
-
-                    <div className="rounded-xl border border-white/10 bg-white/5 px-2 py-1.5">
-                      <div className="text-[10px] text-white/60">ARV</div>
-                      <div className="text-[12px] font-semibold">
-                        {formatMoney(p.arv)}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-1.5 text-[10px] text-white/60">
-                    Tap to open deal sheet →
-                  </div>
-                </button>
-              )
-            })}
-          </div>
-        )}
-      </div>
+                  </button>
+                )
+              })}
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Deal sheet overlay */}
       {selected && (

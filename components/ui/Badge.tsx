@@ -27,7 +27,7 @@ export function Badge({
     muted: "bg-white/5 text-[var(--muted)]",
     accent: "bg-[var(--accent)]/15 text-[var(--accent)]",
     success: "bg-[var(--success)]/15 text-[var(--success)]",
-    warning: "bg-[var(--warn)]/15 text-[var(--warn)]",
+    warning: "bg-[var(--warning)]/15 text-[var(--warning)]",
     danger: "bg-[var(--danger)]/15 text-[var(--danger)]",
     outline: "border border-[var(--border)] text-[var(--text)]",
   }

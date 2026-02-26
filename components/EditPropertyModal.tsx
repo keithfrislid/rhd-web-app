@@ -4,6 +4,14 @@ import { useEffect, useMemo, useState } from "react"
 import { supabase } from "@/lib/supabase"
 import type { PropertyStatus } from "@/lib/properties"
 
+import { ModalShell } from "@/components/ui/ModalShell"
+import { Card, CardContent, CardHeader } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Input } from "@/components/ui/Input"
+import { Select } from "@/components/ui/Select"
+import { Badge } from "@/components/ui/Badge"
+import { cn } from "@/lib/cn"
+
 type Visibility = "public" | "vip" | "exclusive"
 
 function toNumber(val: string) {
@@ -56,7 +64,7 @@ type PropertyRowForEdit = {
   lat: number
   lng: number
 
-  // Phase 9B fields (may be undefined on older rows, but DB now has defaults)
+  // Phase 9B fields
   visibility?: Visibility
   exclusive_user_id?: string | null
   vip_release_at?: string | null
@@ -196,7 +204,6 @@ export default function EditPropertyModal({
     ]
 
     if (!nums.every((n) => Number.isFinite(n))) return false
-
     if (visibility === "exclusive" && !exclusiveUserId.trim()) return false
 
     return true
@@ -278,7 +285,7 @@ export default function EditPropertyModal({
     if (preset === "vip_now_public_24h") {
       setVisibility("vip")
       setExclusiveUserId("")
-      setVipReleaseLocal("") // VIP now
+      setVipReleaseLocal("")
       const pub = new Date(now.getTime() + 24 * 60 * 60 * 1000)
       setPublicReleaseLocal(toLocal(pub))
       return
@@ -343,176 +350,177 @@ export default function EditPropertyModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[5000] flex items-end md:items-center justify-center bg-black/70 backdrop-blur-sm p-3">
-      <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-zinc-950 text-white shadow-2xl overflow-hidden">
-        <div className="px-5 py-4 border-b border-white/10 bg-white/5 flex items-center justify-between">
-          <div>
-            <div className="text-xs uppercase tracking-wide text-white/60">Admin</div>
-            <div className="text-lg font-semibold">Edit Property</div>
+    <ModalShell
+      title="Edit Property"
+      subtitle="Admin"
+      onClose={onClose}
+      maxWidthClass="max-w-2xl"
+    >
+      <div className="space-y-4">
+        {errorMsg && (
+          <div className="rounded-2xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-3 text-sm text-[var(--danger)]">
+            {errorMsg}
           </div>
+        )}
 
-          <button
-            onClick={onClose}
-            className="rounded-xl border border-white/15 px-3 py-2 text-sm hover:bg-white/5"
-          >
-            Close
-          </button>
-        </div>
-
-        <div className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
-          {errorMsg && (
-            <div className="rounded-xl border border-red-400/30 bg-red-500/10 p-3 text-sm text-red-200">
-              {errorMsg}
-            </div>
-          )}
-
-          {/* Address + Status */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="md:col-span-2">
-              <div className="flex items-end justify-between gap-2">
-                <label className="text-xs text-white/70">Address *</label>
-
-                <button
+        {/* Address + Status */}
+        <Card>
+          <CardHeader className="border-b border-[var(--border)] bg-[var(--surface-2)]">
+            <div className="flex flex-wrap items-end justify-between gap-2">
+              <div className="text-sm font-semibold">Basics</div>
+              <div className="flex items-center gap-2">
+                {addressChanged ? (
+                  <Badge variant="warning">Re-geocode required</Badge>
+                ) : (
+                  <Badge variant="muted">Using cached coords</Badge>
+                )}
+                <Button
                   onClick={geocodeAddress}
                   disabled={geocoding || !address.trim()}
-                  className={`rounded-xl px-3 py-1.5 text-xs font-semibold border transition ${
-                    geocoding || !address.trim()
-                      ? "border-white/10 bg-white/5 text-white/60 cursor-not-allowed"
-                      : "border-white/20 bg-white/10 text-white hover:bg-white/15"
-                  }`}
+                  size="sm"
+                  variant="secondary"
                   title="Fetch coordinates from Geoapify"
                 >
                   {geocoding ? "Geocoding…" : "Geocode"}
-                </button>
+                </Button>
               </div>
+            </div>
+          </CardHeader>
 
-              <input
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div className="md:col-span-2">
+              <label className="text-xs text-[var(--muted)]">Address *</label>
+              <Input
                 value={address}
                 onChange={(e) => {
                   setAddress(e.target.value)
                   setGeocodedLabel(null)
                 }}
                 placeholder="123 Main St, Nashville, TN"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
+                className="mt-1"
               />
-
-              {addressChanged ? (
-                <div className="mt-1 text-[11px] text-amber-200/80">
-                  Address changed — re-geocode required before saving.
-                </div>
-              ) : (
-                <div className="mt-1 text-[11px] text-white/50">
-                  Address unchanged — cached lat/lng will be kept.
-                </div>
-              )}
-
               {geocodedLabel && (
-                <div className="mt-1 text-[11px] text-emerald-200/80">Geocoded: {geocodedLabel}</div>
+                <div className="mt-1 text-[11px] text-[var(--success)]">
+                  Geocoded: {geocodedLabel}
+                </div>
               )}
             </div>
 
             <div>
-              <label className="text-xs text-white/70">Status</label>
-              <select
+              <label className="text-xs text-[var(--muted)]">Status</label>
+              <Select
                 value={status}
                 onChange={(e) => setStatus(e.target.value as PropertyStatus)}
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
+                className="mt-1"
               >
                 <option value="New">New</option>
                 <option value="Price Drop">Price Drop</option>
                 <option value="Under Contract">Under Contract</option>
-              </select>
+              </Select>
             </div>
-          </div>
 
-          {/* First Dibs / Visibility */}
-          <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
-            <div className="flex items-center justify-between gap-3">
+            <div className="md:col-span-3">
+              <label className="text-xs text-[var(--muted)]">Photo URL (optional)</label>
+              <Input
+                value={photoUrl}
+                onChange={(e) => setPhotoUrl(e.target.value)}
+                placeholder="https://photos.google.com/..."
+                className="mt-1"
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* First Dibs / Visibility */}
+        <Card>
+          <CardHeader className="border-b border-[var(--border)] bg-[var(--surface-2)]">
+            <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <div className="text-sm font-semibold">First Dibs / Visibility</div>
-                <div className="mt-0.5 text-xs text-white/60">
+                <div className="mt-0.5 text-xs text-[var(--muted)]">
                   Control who can see the deal and when.
                 </div>
               </div>
 
               <div className="flex flex-wrap gap-2">
-                <button
+                <Button
                   type="button"
+                  size="sm"
+                  variant="secondary"
                   onClick={() => applyPreset("public_now")}
-                  className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs hover:bg-white/10"
                 >
                   Public now
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  size="sm"
+                  variant="secondary"
                   onClick={() => applyPreset("vip_now_public_24h")}
-                  className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs hover:bg-white/10"
                 >
                   VIP now → Public 24h
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  size="sm"
+                  variant="secondary"
                   onClick={() => applyPreset("exclusive_now_vip_6h_public_24h")}
-                  className="rounded-xl border border-white/15 bg-black/30 px-3 py-2 text-xs hover:bg-white/10"
                 >
                   Exclusive → VIP 6h → Public 24h
-                </button>
+                </Button>
               </div>
             </div>
+          </CardHeader>
 
-            <div className="mt-3 grid grid-cols-1 md:grid-cols-3 gap-3">
-              <div>
-                <label className="text-xs text-white/70">Visibility</label>
-                <select
-                  value={visibility}
-                  onChange={(e) => {
-                    const v = e.target.value as Visibility
-                    setVisibility(v)
-                    if (v !== "exclusive") setExclusiveUserId("")
-                  }}
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
-                >
-                  <option value="public">Public</option>
-                  <option value="vip">VIP</option>
-                  <option value="exclusive">Exclusive VIP</option>
-                </select>
-              </div>
+          <CardContent className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            <div>
+              <label className="text-xs text-[var(--muted)]">Visibility</label>
+              <Select
+                value={visibility}
+                onChange={(e) => {
+                  const v = e.target.value as Visibility
+                  setVisibility(v)
+                  if (v !== "exclusive") setExclusiveUserId("")
+                }}
+                className="mt-1"
+              >
+                <option value="public">Public</option>
+                <option value="vip">VIP</option>
+                <option value="exclusive">Exclusive VIP</option>
+              </Select>
+            </div>
 
-              <div>
-                <label className="text-xs text-white/70">VIP release (optional)</label>
-                <input
-                  type="datetime-local"
-                  value={vipReleaseLocal}
-                  onChange={(e) => setVipReleaseLocal(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
-                />
-                <div className="mt-1 text-[11px] text-white/50">
-                  Blank = VIP can see now.
-                </div>
-              </div>
+            <div>
+              <label className="text-xs text-[var(--muted)]">VIP release (optional)</label>
+              <Input
+                type="datetime-local"
+                value={vipReleaseLocal}
+                onChange={(e) => setVipReleaseLocal(e.target.value)}
+                className="mt-1"
+              />
+              <div className="mt-1 text-[11px] text-[var(--muted)]">Blank = VIP can see now.</div>
+            </div>
 
-              <div>
-                <label className="text-xs text-white/70">Public release (optional)</label>
-                <input
-                  type="datetime-local"
-                  value={publicReleaseLocal}
-                  onChange={(e) => setPublicReleaseLocal(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
-                />
-                <div className="mt-1 text-[11px] text-white/50">
-                  Blank = Public can see now.
-                </div>
+            <div>
+              <label className="text-xs text-[var(--muted)]">Public release (optional)</label>
+              <Input
+                type="datetime-local"
+                value={publicReleaseLocal}
+                onChange={(e) => setPublicReleaseLocal(e.target.value)}
+                className="mt-1"
+              />
+              <div className="mt-1 text-[11px] text-[var(--muted)]">
+                Blank = Public can see now.
               </div>
             </div>
 
             {visibility === "exclusive" && (
-              <div className="mt-3">
-                <label className="text-xs text-white/70">Exclusive VIP (required)</label>
-                <select
+              <div className="md:col-span-3">
+                <label className="text-xs text-[var(--muted)]">Exclusive VIP (required)</label>
+                <Select
                   value={exclusiveUserId}
                   onChange={(e) => setExclusiveUserId(e.target.value)}
                   disabled={vipLoading}
-                  className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
+                  className="mt-1"
                 >
                   <option value="">{vipLoading ? "Loading VIPs…" : "Select a VIP buyer…"}</option>
                   {vipBuyers.map((b) => {
@@ -527,157 +535,151 @@ export default function EditPropertyModal({
                       </option>
                     )
                   })}
-                </select>
+                </Select>
 
-                <div className="mt-1 text-[11px] text-white/50">
+                <div className="mt-1 text-[11px] text-[var(--muted)]">
                   If no VIPs appear, set someone to VIP in Buyer Rankings first.
                 </div>
               </div>
             )}
-          </div>
+          </CardContent>
+        </Card>
 
-          {/* Photo URL */}
-          <div>
-            <label className="text-xs text-white/70">Photo URL (optional)</label>
-            <input
-              value={photoUrl}
-              onChange={(e) => setPhotoUrl(e.target.value)}
-              placeholder="https://photos.google.com/..."
-              className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
-            />
-          </div>
+        {/* Core numbers */}
+        <Card>
+          <CardHeader className="border-b border-[var(--border)] bg-[var(--surface-2)]">
+            <div className="text-sm font-semibold">Numbers</div>
+          </CardHeader>
 
-          {/* Core numbers */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div>
-              <label className="text-xs text-white/70">Price *</label>
-              <input
+          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <Field label="Price *">
+              <Input
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
                 placeholder="250000"
                 inputMode="numeric"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="text-xs text-white/70">Beds *</label>
-              <input
+            <Field label="Beds *">
+              <Input
                 value={beds}
                 onChange={(e) => setBeds(e.target.value)}
                 placeholder="3"
                 inputMode="numeric"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="text-xs text-white/70">Baths *</label>
-              <input
+            <Field label="Baths *">
+              <Input
                 value={baths}
                 onChange={(e) => setBaths(e.target.value)}
                 placeholder="2"
                 inputMode="decimal"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="text-xs text-white/70">Sqft *</label>
-              <input
+            <Field label="Sqft *">
+              <Input
                 value={sqft}
                 onChange={(e) => setSqft(e.target.value)}
                 placeholder="1400"
                 inputMode="numeric"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="text-xs text-white/70">Acres *</label>
-              <input
+            <Field label="Acres *">
+              <Input
                 value={acres}
                 onChange={(e) => setAcres(e.target.value)}
                 placeholder="0.25"
                 inputMode="decimal"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="text-xs text-white/70">ARV *</label>
-              <input
+            <Field label="ARV *">
+              <Input
                 value={arv}
                 onChange={(e) => setArv(e.target.value)}
                 placeholder="350000"
                 inputMode="numeric"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="text-xs text-white/70">Repairs *</label>
-              <input
+            <Field label="Repairs *">
+              <Input
                 value={repairs}
                 onChange={(e) => setRepairs(e.target.value)}
                 placeholder="40000"
                 inputMode="numeric"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
               />
-            </div>
-          </div>
+            </Field>
+          </CardContent>
+        </Card>
 
-          {/* Lat/Lng */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="text-xs text-white/70">Latitude *</label>
-              <input
+        {/* Lat/Lng */}
+        <Card>
+          <CardHeader className="border-b border-[var(--border)] bg-[var(--surface-2)]">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-sm font-semibold">Coordinates</div>
+              <Badge variant="muted" className="text-[11px]">
+                We keep cached coordinates unless the address changes.
+              </Badge>
+            </div>
+          </CardHeader>
+
+          <CardContent className="grid grid-cols-2 gap-3">
+            <Field label="Latitude *">
+              <Input
                 value={lat}
                 onChange={(e) => setLat(e.target.value)}
                 placeholder="Auto"
                 inputMode="decimal"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
               />
-            </div>
+            </Field>
 
-            <div>
-              <label className="text-xs text-white/70">Longitude *</label>
-              <input
+            <Field label="Longitude *">
+              <Input
                 value={lng}
                 onChange={(e) => setLng(e.target.value)}
                 placeholder="Auto"
                 inputMode="decimal"
-                className="mt-1 w-full rounded-xl border border-white/15 bg-black/40 px-3 py-2 text-sm outline-none focus:border-white/30"
               />
-            </div>
-          </div>
+            </Field>
+          </CardContent>
+        </Card>
 
-          <div className="flex gap-2 pt-2">
-            <button
-              onClick={onClose}
-              className="flex-1 rounded-xl border border-white/15 py-2 text-sm font-semibold hover:bg-white/5"
-            >
-              Cancel
-            </button>
+        {/* Footer actions */}
+        <div className="flex gap-2 pt-1">
+          <Button onClick={onClose} variant="secondary" className="flex-1">
+            Cancel
+          </Button>
 
-            <button
-              disabled={!canSubmit || saving}
-              onClick={save}
-              className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${
-                !canSubmit || saving
-                  ? "bg-white/10 text-white/60 border border-white/10 cursor-not-allowed"
-                  : "bg-white text-black hover:opacity-90"
-              }`}
-            >
-              {saving ? "Saving…" : "Save Changes"}
-            </button>
-          </div>
-
-          <div className="text-[11px] text-white/50">
-            We keep cached coordinates unless the address changes.
-          </div>
+          <Button
+            disabled={!canSubmit || saving}
+            onClick={save}
+            variant="primary"
+            className={cn("flex-1", !canSubmit || saving ? "opacity-70" : "")}
+          >
+            {saving ? "Saving…" : "Save Changes"}
+          </Button>
         </div>
       </div>
+    </ModalShell>
+  )
+}
+
+function Field({
+  label,
+  children,
+}: {
+  label: string
+  children: React.ReactNode
+}) {
+  return (
+    <div>
+      <label className="text-xs text-[var(--muted)]">{label}</label>
+      <div className="mt-1">{children}</div>
     </div>
   )
 }

@@ -5,6 +5,13 @@ import type { Property } from "@/lib/properties"
 import { formatMoney } from "@/lib/properties"
 import { supabase } from "@/lib/supabase"
 
+import { Card, CardContent, CardHeader } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
+import { Input } from "@/components/ui/Input"
+import { cn } from "@/lib/cn"
+import { StatusBadge } from "@/components/ui/StatusBadge"
+
 type OfferStatus = "pending" | "accepted" | "rejected" | "withdrawn"
 
 type OfferRow = {
@@ -29,6 +36,13 @@ function formatDeadline(ts: string | null | undefined) {
     hour: "numeric",
     minute: "2-digit",
   })
+}
+
+function statusToBadgeVariant(status: OfferStatus) {
+  if (status === "accepted") return { variant: "success" as const, label: "Accepted" }
+  if (status === "rejected") return { variant: "muted" as const, label: "Rejected" }
+  if (status === "withdrawn") return { variant: "muted" as const, label: "Withdrawn" }
+  return { variant: "accent" as const, label: "Pending" }
 }
 
 export default function DealSheetPanel({
@@ -60,18 +74,20 @@ export default function DealSheetPanel({
   const [offerError, setOfferError] = useState<string | null>(null)
 
   const deadlineLabel = useMemo(
-    () => formatDeadline(selected.offerDeadline),
-    [selected.offerDeadline]
+    () => formatDeadline((selected as any).offerDeadline),
+    // keep the same behavior even if type is loose
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [(selected as any).offerDeadline]
   )
 
   const offersClosed = useMemo(() => {
-    if (selected.isAcceptingOffers === false) return true
-    if (selected.acceptedOfferId) return true
-    if (!selected.offerDeadline) return false
-    const d = new Date(selected.offerDeadline)
+    if ((selected as any).isAcceptingOffers === false) return true
+    if ((selected as any).acceptedOfferId) return true
+    if (!(selected as any).offerDeadline) return false
+    const d = new Date((selected as any).offerDeadline)
     if (Number.isNaN(d.getTime())) return false
     return Date.now() > d.getTime()
-  }, [selected.isAcceptingOffers, selected.acceptedOfferId, selected.offerDeadline])
+  }, [selected])
 
   // Reusable: fetch offer count + user's offer for this property
   const refreshOfferData = async () => {
@@ -307,281 +323,249 @@ export default function DealSheetPanel({
     setSubmittingOffer(false)
   }
 
-
   const withdrawOffer = async () => {
     if (!userOffer || submittingOffer) return
     setOfferError(null)
     setSubmittingOffer(true)
 
-    const { error } = await supabase
-      .from("offers")
-      .delete()
-      .eq("id", userOffer.id)
+    const { error } = await supabase.from("offers").delete().eq("id", userOffer.id)
 
     if (error) {
       console.warn("Withdraw (delete) failed:", error.message)
       setOfferError(error.message)
     } else {
       window.dispatchEvent(new CustomEvent("rhd:offers-changed"))
-      await refreshOfferData() // will now come back as null
+      await refreshOfferData()
     }
 
     setSubmittingOffer(false)
   }
 
-  const statusPill = (status: OfferStatus) => {
-  const base =
-    "inline-flex items-center gap-1 rounded-full px-2 py-1 text-[11px] font-semibold border"
-
-  if (status === "accepted") {
-    return (
-      <span className={`${base} bg-emerald-500/15 border-emerald-400/30 text-emerald-200`}>
-        Accepted
-      </span>
-    )
-  }
-  if (status === "rejected") {
-    return (
-      <span className={`${base} bg-zinc-500/15 border-white/10 text-white/70`}>
-        Rejected
-      </span>
-    )
-  }
-
-  // With delete-on-withdraw, you’ll basically only see Pending/Accepted/Rejected,
-  // but leaving this here is harmless.
-  if (status === "withdrawn") {
-    return (
-      <span className={`${base} bg-zinc-500/15 border-white/10 text-white/70`}>
-        Withdrawn
-      </span>
-    )
-  }
+  const statusBadge = userOffer?.status ? statusToBadgeVariant(userOffer.status) : null
 
   return (
-    <span className={`${base} bg-sky-500/15 border-sky-400/30 text-sky-200`}>
-      Pending
-    </span>
-  )
-}
-
-  return (
-    <div className="max-h-[65vh] overflow-y-auto rounded-2xl bg-zinc-950/95 text-white border border-white/10 shadow-2xl backdrop-blur p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          <div className="text-xs tracking-wide uppercase text-white/60">Deal Sheet</div>
-
-          <div className="mt-1 flex items-start justify-between gap-2">
-            <div className="text-base font-semibold leading-snug break-words">
-              {selected.address}
+    <Card className="max-h-[65vh] overflow-y-auto bg-[var(--surface)]/95 text-[var(--text)] border border-[var(--border)] shadow-2xl backdrop-blur rounded-2xl">
+      <CardHeader className="border-b border-[var(--border)] bg-[var(--surface-2)]">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="text-xs tracking-wide uppercase text-[var(--muted)]">
+              Deal Sheet
             </div>
 
-            {selected.status === "New" && !isViewed && (
-              <div className="shrink-0 text-[11px] px-2 py-1 rounded-full bg-red-600/90 border border-red-400/40 text-white font-semibold shadow-sm">
-                New
+            <div className="mt-1 flex items-start justify-between gap-2">
+              <div className="text-base font-semibold leading-snug break-words">
+                {selected.address}
+              </div>
+
+              {selected.status === "New" && !isViewed && <StatusBadge kind="new" className="shrink-0" />}
+            </div>
+
+            {/* Hybrid offer signals */}
+            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
+              {deadlineLabel && (
+                <Badge variant="outline" className="text-[11px] font-semibold">
+                  Deadline: <span className="ml-1 text-[var(--text)]">{deadlineLabel}</span>
+                </Badge>
+              )}
+
+              <Badge variant="outline" className="text-[11px] font-semibold">
+                {offerLoading ? "Offers: …" : `Offers: ${offerCount ?? 0}`}
+              </Badge>
+
+              {userOffer?.status === "pending" && <StatusBadge kind="offer_pending" />}
+              {userOffer?.status === "accepted" && <StatusBadge kind="offer_accepted" />}
+              {userOffer?.status === "rejected" && <StatusBadge kind="offer_rejected" />}
+            </div>
+          </div>
+
+          <Button variant="secondary" size="sm" onClick={onClose}>
+            Close
+          </Button>
+        </div>
+      </CardHeader>
+
+      <CardContent className="p-5">
+        {/* Quick stats */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
+            <div className="text-xs text-[var(--muted)]">Price</div>
+            <div className="mt-1 text-lg font-semibold">{formatMoney(selected.price)}</div>
+          </div>
+
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
+            <div className="text-xs text-[var(--muted)]">Property</div>
+            <div className="mt-1 font-semibold">
+              {selected.beds} bd • {selected.baths} ba
+            </div>
+            <div className="text-sm text-[var(--muted)]">
+              {selected.sqft.toLocaleString()} sqft • {selected.acres} acres
+            </div>
+          </div>
+        </div>
+
+        {/* Investor metrics */}
+        <div className="mt-3 grid grid-cols-3 gap-2">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
+            <div className="text-xs text-[var(--muted)]">ARV</div>
+            <div className="mt-1 font-semibold">{formatMoney(selected.arv)}</div>
+          </div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
+            <div className="text-xs text-[var(--muted)]">Repairs</div>
+            <div className="mt-1 font-semibold">{formatMoney(selected.repairs)}</div>
+          </div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
+            <div className="text-xs text-[var(--muted)]">Spread</div>
+            <div className="mt-1 font-semibold">{formatMoney(spread)}</div>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          <a
+            href={(selected as any).photoUrl}
+            target="_blank"
+            rel="noreferrer"
+            className={cn(
+              "col-span-1 inline-flex items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-2 text-sm font-semibold",
+              "hover:bg-[var(--surface)]"
+            )}
+          >
+            Photos
+          </a>
+
+          <Button
+            onClick={() => {
+              setOfferError(null)
+              setShowOfferForm((v) => !v)
+            }}
+            disabled={offersClosed || !!userOffer}
+            variant={offersClosed || !!userOffer ? "secondary" : "primary"}
+            className={cn("col-span-2", offersClosed || !!userOffer ? "opacity-70" : "")}
+            title={
+              offersClosed
+                ? "Offers are closed"
+                : userOffer
+                ? "You already submitted an offer"
+                : "Submit an offer"
+            }
+          >
+            {offersClosed ? "Offers Closed" : userOffer ? "Offer Submitted" : "Submit Offer"}
+          </Button>
+        </div>
+
+        {/* Offer form (simple v1) */}
+        {showOfferForm && !offersClosed && !userOffer && (
+          <div className="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+            <div className="text-sm font-semibold">Submit Offer</div>
+
+            <div className="mt-3 grid grid-cols-1 gap-2">
+              <label className="text-xs text-[var(--muted)]">Offer Price</label>
+              <Input
+                value={offerPrice}
+                onChange={(e) => setOfferPrice(e.target.value)}
+                placeholder="$250,000"
+                inputMode="decimal"
+                className="h-10"
+              />
+
+              <label className="mt-2 text-xs text-[var(--muted)]">Notes (optional)</label>
+              <textarea
+                value={offerNotes}
+                onChange={(e) => setOfferNotes(e.target.value)}
+                placeholder="Any quick context (closing flexibility, etc.)"
+                rows={3}
+                className={cn(
+                  "w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none",
+                  "focus:border-white/30"
+                )}
+              />
+            </div>
+
+            {offerError && <div className="mt-3 text-xs text-[var(--danger)]">{offerError}</div>}
+
+            <div className="mt-3 flex gap-2">
+              <Button
+                onClick={() => setShowOfferForm(false)}
+                variant="secondary"
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={submitOffer}
+                disabled={submittingOffer}
+                variant="primary"
+                className={cn("flex-1", submittingOffer ? "opacity-70" : "")}
+              >
+                {submittingOffer ? "Submitting…" : "Submit"}
+              </Button>
+            </div>
+
+            <div className="mt-2 text-[11px] text-[var(--muted)]">
+              Offers are private. You will only see the total offer count.
+            </div>
+          </div>
+        )}
+
+        {/* If user already has an offer, show it simply */}
+        {!offerLoading && userOffer && (
+          <div className="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+            <div className="flex items-center justify-between gap-2">
+              <div className="text-sm font-semibold">Your Offer</div>
+              {statusBadge && <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>}
+            </div>
+
+            <div className="mt-2 text-lg font-semibold">{formatMoney(userOffer.offer_price)}</div>
+
+            {userOffer.notes && (
+              <div className="mt-1 text-sm text-[var(--muted)] whitespace-pre-wrap">
+                {userOffer.notes}
+              </div>
+            )}
+
+            {userOffer.status === "pending" && (
+              <div className="mt-3">
+                <Button
+                  onClick={withdrawOffer}
+                  disabled={submittingOffer}
+                  variant="secondary"
+                  className={cn("w-full", submittingOffer ? "opacity-70" : "")}
+                >
+                  {submittingOffer ? "Withdrawing…" : "Withdraw Offer"}
+                </Button>
+
+                {offerError && (
+                  <div className="mt-2 text-xs text-[var(--danger)]">{offerError}</div>
+                )}
               </div>
             )}
           </div>
+        )}
 
-          {/* Hybrid offer signals */}
-          <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-white/70">
-            {deadlineLabel && (
-              <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-                Deadline: <span className="text-white/90">{deadlineLabel}</span>
-              </span>
-            )}
-
-            <span className="rounded-full border border-white/10 bg-white/5 px-2 py-1">
-              {offerLoading ? "Offers: …" : `Offers: ${offerCount ?? 0}`}
-            </span>
-
-            {userOffer?.status && statusPill(userOffer.status)}
-          </div>
+        {/* Save button */}
+        <div className="mt-3">
+          <Button
+            onClick={toggleSave}
+            disabled={checking || saving}
+            variant={isSaved ? "secondary" : "secondary"}
+            className={cn("w-full", checking || saving ? "opacity-70" : "")}
+          >
+            {checking
+              ? "Checking…"
+              : saving
+              ? isSaved
+                ? "Unsaving…"
+                : "Saving…"
+              : isSaved
+              ? "Saved"
+              : "Save"}
+          </Button>
         </div>
 
-        <button
-          onClick={onClose}
-          className="shrink-0 rounded-lg border border-white/10 px-3 py-1.5 text-sm hover:bg-white/5"
-        >
-          Close
-        </button>
-      </div>
-
-      {/* Quick stats */}
-      <div className="mt-4 grid grid-cols-2 gap-2">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <div className="text-xs text-white/60">Price</div>
-          <div className="mt-1 text-lg font-semibold">{formatMoney(selected.price)}</div>
+        <div className="mt-3 text-xs text-[var(--muted)]">
+          Saved properties are tied to your account.
         </div>
-
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <div className="text-xs text-white/60">Property</div>
-          <div className="mt-1 font-semibold">
-            {selected.beds} bd • {selected.baths} ba
-          </div>
-          <div className="text-sm text-white/70">
-            {selected.sqft.toLocaleString()} sqft • {selected.acres} acres
-          </div>
-        </div>
-      </div>
-
-      {/* Investor metrics */}
-      <div className="mt-3 grid grid-cols-3 gap-2">
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <div className="text-xs text-white/60">ARV</div>
-          <div className="mt-1 font-semibold">{formatMoney(selected.arv)}</div>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <div className="text-xs text-white/60">Repairs</div>
-          <div className="mt-1 font-semibold">{formatMoney(selected.repairs)}</div>
-        </div>
-        <div className="rounded-xl border border-white/10 bg-white/5 p-3">
-          <div className="text-xs text-white/60">Spread</div>
-          <div className="mt-1 font-semibold">{formatMoney(spread)}</div>
-        </div>
-      </div>
-
-      {/* Actions */}
-      <div className="mt-4 grid grid-cols-3 gap-2">
-        <a
-          href={selected.photoUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="col-span-1 rounded-xl border border-white/15 py-2 text-center font-semibold hover:bg-white/5"
-        >
-          Photos
-        </a>
-
-        <button
-          onClick={() => {
-            setOfferError(null)
-            setShowOfferForm((v) => !v)
-          }}
-          disabled={offersClosed || !!userOffer}
-          className={`col-span-2 rounded-xl font-semibold py-2 transition ${
-            offersClosed || !!userOffer
-              ? "bg-white/10 text-white/60 border border-white/10 cursor-not-allowed"
-              : "bg-white text-black hover:opacity-90"
-          }`}
-          title={
-            offersClosed
-              ? "Offers are closed"
-              : userOffer
-              ? "You already submitted an offer"
-              : "Submit an offer"
-          }
-        >
-          {offersClosed ? "Offers Closed" : userOffer ? "Offer Submitted" : "Submit Offer"}
-        </button>
-      </div>
-
-      {/* Offer form (simple v1) */}
-      {showOfferForm && !offersClosed && !userOffer && (
-        <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="text-sm font-semibold">Submit Offer</div>
-          <div className="mt-3 grid grid-cols-1 gap-2">
-            <label className="text-xs text-white/70">Offer Price</label>
-            <input
-              value={offerPrice}
-              onChange={(e) => setOfferPrice(e.target.value)}
-              placeholder="$250,000"
-              inputMode="decimal"
-              className="w-full rounded-xl border border-white/15 bg-zinc-950/60 px-3 py-2 text-sm outline-none focus:border-white/30"
-            />
-
-            <label className="mt-2 text-xs text-white/70">Notes (optional)</label>
-            <textarea
-              value={offerNotes}
-              onChange={(e) => setOfferNotes(e.target.value)}
-              placeholder="Any quick context (closing flexibility, etc.)"
-              rows={3}
-              className="w-full rounded-xl border border-white/15 bg-zinc-950/60 px-3 py-2 text-sm outline-none focus:border-white/30"
-            />
-          </div>
-
-          {offerError && <div className="mt-3 text-xs text-red-300">{offerError}</div>}
-
-          <div className="mt-3 flex gap-2">
-            <button
-              onClick={() => setShowOfferForm(false)}
-              className="flex-1 rounded-xl border border-white/15 py-2 text-sm font-semibold hover:bg-white/5"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={submitOffer}
-              disabled={submittingOffer}
-              className={`flex-1 rounded-xl py-2 text-sm font-semibold transition ${
-                submittingOffer
-                  ? "bg-white/10 text-white/60 border border-white/10 cursor-not-allowed"
-                  : "bg-white text-black hover:opacity-90"
-              }`}
-            >
-              {submittingOffer ? "Submitting…" : "Submit"}
-            </button>
-          </div>
-
-          <div className="mt-2 text-[11px] text-white/60">
-            Offers are private. You will only see the total offer count.
-          </div>
-        </div>
-      )}
-
-      {/* If user already has an offer, show it simply */}
-      {!offerLoading && userOffer && (
-        <div className="mt-3 rounded-2xl border border-white/10 bg-white/5 p-4">
-          <div className="flex items-center justify-between gap-2">
-            <div className="text-sm font-semibold">Your Offer</div>
-            {statusPill(userOffer.status)}
-          </div>
-          <div className="mt-2 text-lg font-semibold">{formatMoney(userOffer.offer_price)}</div>
-          {userOffer.notes && (
-            <div className="mt-1 text-sm text-white/70 whitespace-pre-wrap">{userOffer.notes}</div>
-          )}
-
-          {userOffer.status === "pending" && (
-            <div className="mt-3">
-              <button
-                onClick={withdrawOffer}
-                disabled={submittingOffer}
-                className={`w-full rounded-xl border py-2 text-sm font-semibold transition ${
-                  submittingOffer
-                    ? "border-white/10 bg-white/5 text-white/60 cursor-not-allowed"
-                    : "border-white/15 hover:bg-white/5"
-                }`}
-              >
-                {submittingOffer ? "Withdrawing…" : "Withdraw Offer"}
-              </button>
-              {offerError && <div className="mt-2 text-xs text-red-300">{offerError}</div>}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Save button */}
-      <div className="mt-3">
-        <button
-          onClick={toggleSave}
-          disabled={checking || saving}
-          className={`w-full rounded-xl border py-2 font-semibold transition ${
-            isSaved
-              ? "border-white/25 bg-white/10 hover:bg-white/15"
-              : "border-white/15 hover:bg-white/5"
-          } ${checking || saving ? "opacity-70 cursor-not-allowed" : ""}`}
-        >
-          {checking
-            ? "Checking…"
-            : saving
-            ? isSaved
-              ? "Unsaving…"
-              : "Saving…"
-            : isSaved
-            ? "Saved"
-            : "Save"}
-        </button>
-      </div>
-
-      <div className="mt-3 text-xs text-white/60">Saved properties are tied to your account.</div>
-    </div>
+      </CardContent>
+    </Card>
   )
 }

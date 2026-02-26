@@ -6,10 +6,15 @@ import PropertyListView from "@/components/PropertyListView"
 import { fetchProperties, type Property } from "@/lib/properties"
 import { useViewedProperties } from "@/lib/hooks/useViewedProperties"
 
+import { PageShell } from "@/components/ui/PageShell"
+import { Card, CardContent } from "@/components/ui/Card"
+import { Button } from "@/components/ui/Button"
+import { Badge } from "@/components/ui/Badge"
+
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
   ssr: false,
   loading: () => (
-    <div className="rounded-2xl border border-white/10 p-4 text-sm text-white/70">
+    <div className="rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-4 text-sm text-[var(--muted)]">
       Loading map…
     </div>
   ),
@@ -29,7 +34,9 @@ export default function DashboardPage() {
 
     const run = async () => {
       setLoading(true)
-      const rows = await fetchProperties({ includeUnderContract: showUnderContract })
+      const rows = await fetchProperties({
+        includeUnderContract: showUnderContract,
+      })
       if (cancelled) return
       setProperties(rows)
       setLoading(false)
@@ -45,43 +52,55 @@ export default function DashboardPage() {
   const { viewedIds, viewedLoading, markViewed } = useViewedProperties(propertyIds)
 
   return (
-    <main className="w-full">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+    <PageShell>
+      <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold">Browse Deals</h1>
-          <p className="mt-1 text-sm text-white/70">
+          <p className="mt-1 text-sm text-[var(--muted)]">
             Map-first browsing with compact investor list view.
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setViewMode("map")}
-            className={`rounded-xl px-3 py-2 text-sm border border-white/20 ${
-              viewMode === "map" ? "bg-white text-black" : "hover:bg-white/10"
-            }`}
-          >
-            Map
-          </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-2">
+            <Button
+              variant={viewMode === "map" ? "primary" : "secondary"}
+              size="sm"
+              onClick={() => setViewMode("map")}
+            >
+              Map
+            </Button>
 
-          <button
-            onClick={() => setViewMode("list")}
-            className={`rounded-xl px-3 py-2 text-sm border border-white/20 ${
-              viewMode === "list" ? "bg-white text-black" : "hover:bg-white/10"
-            }`}
-          >
-            List
-          </button>
+            <Button
+              variant={viewMode === "list" ? "primary" : "secondary"}
+              size="sm"
+              onClick={() => setViewMode("list")}
+            >
+              List
+            </Button>
+          </div>
 
-          <label className="flex items-center gap-2 rounded-xl border border-white/20 px-3 py-2 text-sm text-white/80 hover:bg-white/5 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={showUnderContract}
-              onChange={(e) => setShowUnderContract(e.target.checked)}
-              className="accent-white"
-            />
-            Show Under Contract
-          </label>
+          <Card className="rounded-xl">
+            <CardContent className="flex items-center gap-2 px-3 py-2">
+              <input
+                id="show-under-contract"
+                type="checkbox"
+                checked={showUnderContract}
+                onChange={(e) => setShowUnderContract(e.target.checked)}
+                className="h-4 w-4 accent-white"
+              />
+              <label
+                htmlFor="show-under-contract"
+                className="cursor-pointer text-sm text-[var(--muted)]"
+              >
+                Show Under Contract
+              </label>
+
+              <Badge variant="muted" className="ml-1">
+                {loading ? "Loading…" : `${properties.length}`}
+              </Badge>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
@@ -104,6 +123,6 @@ export default function DashboardPage() {
           />
         )}
       </div>
-    </main>
+    </PageShell>
   )
 }
