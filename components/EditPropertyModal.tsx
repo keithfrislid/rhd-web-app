@@ -352,7 +352,6 @@ export default function EditPropertyModal({
   return (
     <ModalShell
       title="Edit Property"
-      subtitle="Admin"
       onClose={onClose}
       maxWidthClass="max-w-2xl"
     >
