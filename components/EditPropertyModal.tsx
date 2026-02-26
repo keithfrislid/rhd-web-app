@@ -352,8 +352,12 @@ export default function EditPropertyModal({
   return (
     <ModalShell
       title="Edit Property"
-      onClose={onClose}
-      maxWidthClass="max-w-2xl"
+      description="Admin"
+      right={
+        <Button variant="secondary" size="sm" onClick={onClose}>
+          Close
+        </Button>
+      }
     >
       <div className="space-y-4">
         {errorMsg && (
