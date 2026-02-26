@@ -13,6 +13,7 @@ import { useAdminData, type AdminView, type PropertyRow } from "@/lib/hooks/useA
 
 import AdminHeaderTabs from "@/components/admin/AdminHeaderTabs"
 import AdminPropertiesPanel from "@/components/admin/AdminPropertiesPanel"
+import AdminPropertyDetailsModal from "@/components/admin/AdminPropertyDetailsModal"
 import AdminInboxPanel from "@/components/admin/AdminInboxPanel"
 import AdminBuyBoxesPanel from "@/components/admin/AdminBuyBoxesPanel"
 import AdminBuyerRankingsPanel from "@/components/admin/AdminBuyerRankingsPanel"
@@ -27,6 +28,7 @@ export default function AdminPage() {
   const [view, setView] = useState<AdminView>("properties")
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const [createOpen, setCreateOpen] = useState(false)
@@ -74,6 +76,12 @@ export default function AdminPage() {
 
     setDeleteBusy(null)
     await refreshAll()
+
+    // If we just deleted the open deal, close the details view.
+    if (selectedId === propertyId) {
+      setDetailsOpen(false)
+      setSelectedId(null)
+    }
   }
 
   const closeProperty = async (p: PropertyRow, outcome: "won" | "lost") => {
@@ -184,16 +192,11 @@ export default function AdminPage() {
           <AdminPropertiesPanel
             propsLoading={propsLoading}
             properties={properties}
-            selectedId={selectedId}
-            setSelectedId={setSelectedId}
-            selected={selected}
             pendingCountByProperty={pendingCountByProperty}
-            onEdit={(p) => setEditingProperty(p)}
-            onDelete={deleteProperty}
-            onClose={closeProperty}
-            deleteBusy={deleteBusy}
-            closeBusy={closeBusy}
-            onAcceptedOffer={refreshAll}
+            onOpen={(propertyId) => {
+              setSelectedId(propertyId)
+              setDetailsOpen(true)
+            }}
           />
         )}
 
@@ -204,6 +207,7 @@ export default function AdminPage() {
             onOpenProperty={(propertyId) => {
               setView("properties")
               setSelectedId(propertyId)
+              setDetailsOpen(true)
             }}
           />
         )}
@@ -214,6 +218,26 @@ export default function AdminPage() {
 
         {view === "buyers" && <AdminBuyerRankingsPanel />}
       </PageShell>
+
+      <AdminPropertyDetailsModal
+        open={detailsOpen}
+        property={selected}
+        pendingOffersCount={selectedId ? (pendingCountByProperty.get(selectedId) ?? 0) : 0}
+        onClose={() => {
+          setDetailsOpen(false)
+          setSelectedId(null)
+        }}
+        onRefresh={refreshAll}
+        onEdit={(p) => {
+          setDetailsOpen(false)
+          setEditingProperty(p)
+        }}
+        onDelete={deleteProperty}
+        onCloseProperty={closeProperty}
+        deleteBusy={deleteBusy}
+        closeBusy={closeBusy}
+        onAcceptedOffer={refreshAll}
+      />
 
       <AdminCreatePropertyModal
         open={createOpen}

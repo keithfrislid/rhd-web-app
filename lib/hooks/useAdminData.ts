@@ -62,11 +62,7 @@ type Params = {
   setErrorMsg: (msg: string | null) => void
 }
 
-export function useAdminData({
-  selectedId,
-  setSelectedId,
-  setErrorMsg,
-}: Params) {
+export function useAdminData({ selectedId, setSelectedId, setErrorMsg }: Params) {
   const [propsLoading, setPropsLoading] = useState(true)
   const [properties, setProperties] = useState<PropertyRow[]>([])
 
@@ -102,9 +98,11 @@ export function useAdminData({
       const rows = (data ?? []) as PropertyRow[]
       setProperties(rows)
 
+      // Keep selection stable. Do NOT auto-select the first property unless a selection already exists.
+      // This enables the Admin list to stay uncluttered until the admin explicitly opens a deal.
       if (rows.length === 0) {
         setSelectedId(null)
-      } else if (!selectedId || !rows.some((r) => r.id === selectedId)) {
+      } else if (selectedId && !rows.some((r) => r.id === selectedId)) {
         setSelectedId(rows[0].id)
       }
     } catch (e: any) {
@@ -139,17 +137,18 @@ export function useAdminData({
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json?.error || `Request failed (${res.status})`)
 
-      const rows = Array.isArray(json?.offers) ? json.offers : []
-      // Normalize property field name to `properties` (component expects it)
+      const rows = Array.isArray(json?.offers) ? (json.offers as PendingOfferRow[]) : []
+
+      // normalize any old response keys if needed
       const normalized = rows.map((o: any) => ({
         ...o,
         properties: o.properties ?? o.property ?? null,
-      }))
+      })) as PendingOfferRow[]
 
-      setPendingOffers(normalized as PendingOfferRow[])
+      setPendingOffers(normalized)
     } catch (e: any) {
+      setErrorMsg(e?.message ?? "Failed to load inbox.")
       setPendingOffers([])
-      setErrorMsg(e?.message ?? "Failed to load inbox")
     } finally {
       setInboxLoading(false)
     }
@@ -157,34 +156,29 @@ export function useAdminData({
 
   const loadPendingUsersCount = async () => {
     setUsersLoading(true)
+    setErrorMsg(null)
 
-    // IMPORTANT:
-    // The AdminUsersPanel loads pending users through the `admin-users` Edge Function.
-    // Doing a direct `profiles` select here can return 0 due to RLS, even for admins.
-    // So we count pending users via the same Edge Function to keep the badge correct.
     try {
       const { data } = await supabase.auth.getSession()
       const token = data.session?.access_token
       if (!token) throw new Error("No session")
 
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-users`,
-        {
-          method: "GET",
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      )
+      const res = await fetch(`${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/admin-users`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      })
 
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json?.error || `Request failed (${res.status})`)
 
       const users = Array.isArray(json?.users) ? json.users : []
-      const pending = users.filter((u: any) => u?.role === "pending")
-      setPendingUsersCount(pending.length)
-    } catch {
+      const pending = users.filter((u: any) => u?.role === "pending").length
+      setPendingUsersCount(pending)
+    } catch (e: any) {
+      setErrorMsg(e?.message ?? "Failed to load pending users.")
       setPendingUsersCount(0)
     } finally {
       setUsersLoading(false)
@@ -195,37 +189,28 @@ export function useAdminData({
     await Promise.all([loadProperties(), loadInbox(), loadPendingUsersCount()])
   }
 
-  // Live updates
   useEffect(() => {
-    const handler = () => loadInbox()
-    window.addEventListener("rhd:offers-changed", handler)
-    return () => window.removeEventListener("rhd:offers-changed", handler)
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+    const onOffersChanged = () => loadInbox()
+    const onUsersChanged = () => loadPendingUsersCount()
 
-  useEffect(() => {
-    const handler = () => loadPendingUsersCount()
-    window.addEventListener("rhd:users-changed", handler)
-    return () => window.removeEventListener("rhd:users-changed", handler)
+    window.addEventListener("rhd:offers-changed", onOffersChanged as any)
+    window.addEventListener("rhd:users-changed", onUsersChanged as any)
+    return () => {
+      window.removeEventListener("rhd:offers-changed", onOffersChanged as any)
+      window.removeEventListener("rhd:users-changed", onUsersChanged as any)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   return {
-    // data
     properties,
     pendingOffers,
     pendingUsersCount,
     pendingCountByProperty,
 
-    // loading
     propsLoading,
     inboxLoading,
     usersLoading,
-
-    // actions
-    loadProperties,
-    loadInbox,
-    loadPendingUsersCount,
     refreshAll,
   }
 }
