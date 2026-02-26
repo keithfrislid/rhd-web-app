@@ -3,39 +3,55 @@
 
 :root {
   /*
-    Design Tokens (Phase A)
-    Keep these as the single source of truth for the app theme.
-    Components should prefer these variables over hardcoded hex colors.
+    Design Tokens (Polish Phase)
+    Goal: Move from stark black to GitHub-like blue/gray dark.
+    Components should prefer these variables over hardcoded colors.
   */
 
-  /* Surfaces */
-  --background: #0a0a0a;
-  --surface: #0f0f10;
-  --surface-2: #141416;
+  /* Helps native inputs/scrollbars match the dark theme */
+  color-scheme: dark;
+
+  /* Surfaces (GitHub-dark inspired) */
+  --background: #0d1117; /* page background */
+  --surface: #161b22;    /* primary surface */
+  --surface-2: #21262d;  /* elevated surface */
 
   /* Text */
-  --text: #ededed;
-  --muted: rgba(237, 237, 237, 0.7);
+  --text: #c9d1d9;
+  --muted: rgba(201, 209, 217, 0.72);
 
   /* Borders */
-  --border: rgba(237, 237, 237, 0.12);
-  --border-strong: rgba(237, 237, 237, 0.22);
+  --border: rgba(48, 54, 61, 0.85);
+  --border-strong: rgba(72, 79, 88, 0.95);
 
   /* Accent + status */
-  --accent: #3b82f6; /* blue-500 */
-  --success: #22c55e; /* green-500 */
-  --warning: #f59e0b; /* amber-500 */
-  --danger: #ef4444;  /* red-500 */
+  --accent: #2f81f7; /* GitHub-ish blue */
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
 
   /* Focus ring */
-  --ring: rgba(59, 130, 246, 0.55);
+  --ring: rgba(47, 129, 247, 0.55);
+}
+
+html,
+body {
+  height: 100%;
 }
 
 body {
-  background: var(--background);
+  /*
+    Subtle blue depth so the background doesn’t feel like a flat void.
+    Still dark, but less “pure black”.
+  */
+  background:
+    radial-gradient(
+      1200px 700px at 50% -200px,
+      rgba(47, 129, 247, 0.10),
+      transparent 60%
+    ),
+    var(--background);
+
   color: var(--text);
   font-family: Arial, Helvetica, sans-serif;
 }
-
-/* Optional helpers (use in Tailwind arbitrary values) */
-/* Example: className="bg-[var(--surface)] border border-[var(--border)]" */

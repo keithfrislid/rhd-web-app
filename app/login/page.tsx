@@ -32,10 +32,10 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-2xl border p-6 shadow-sm">
+    <main className="min-h-screen flex items-center justify-center p-6 bg-[var(--background)] text-[var(--text)]">
+      <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm">
         <h1 className="text-2xl font-semibold">Sign in</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-[var(--muted)]">
           Approved buyers only. Please sign in.
         </p>
 
@@ -47,7 +47,7 @@ export default function LoginPage() {
               required
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="mt-1 w-full rounded-xl border px-3 py-2 bg-black text-white"
+              className="mt-1 w-full rounded-xl border border-[var(--border)] px-3 py-2 bg-[var(--surface-2)] text-[var(--text)] outline-none focus:border-[var(--border-strong)]"
               placeholder="you@example.com"
             />
           </div>
@@ -59,29 +59,29 @@ export default function LoginPage() {
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="mt-1 w-full rounded-xl border px-3 py-2 bg-black text-white"
+              className="mt-1 w-full rounded-xl border border-[var(--border)] px-3 py-2 bg-[var(--surface-2)] text-[var(--text)] outline-none focus:border-[var(--border-strong)]"
               placeholder="••••••••"
             />
           </div>
 
           {errorMessage && (
-            <p className="text-sm text-red-500">{errorMessage}</p>
+            <p className="text-sm text-[var(--danger)]">{errorMessage}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-white text-black px-3 py-2 font-medium"
+            className="w-full rounded-xl bg-[var(--accent)] text-white px-3 py-2 font-medium hover:brightness-110 disabled:opacity-60"
           >
             {loading ? "Signing in..." : "Sign in"}
           </button>
 
-          <div className="pt-2 text-sm text-white/70">
+          <div className="pt-2 text-sm text-[var(--muted)]">
             New buyer?{" "}
             <button
               type="button"
               onClick={() => router.push("/signup")}
-              className="underline hover:text-white"
+              className="underline hover:text-[var(--text)]"
             >
               Request access
             </button>

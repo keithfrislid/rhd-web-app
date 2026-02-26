@@ -64,16 +64,26 @@ export default function DashboardPage() {
         <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2">
             <Button
-              variant={viewMode === "map" ? "primary" : "secondary"}
+              variant="secondary"
               size="sm"
+              className={
+                viewMode === "map"
+                  ? "bg-[var(--surface-2)] text-[var(--text)] border-[var(--border-strong)]"
+                  : "bg-[var(--surface)] text-[var(--muted)]"
+              }
               onClick={() => setViewMode("map")}
             >
               Map
             </Button>
 
             <Button
-              variant={viewMode === "list" ? "primary" : "secondary"}
+              variant="secondary"
               size="sm"
+              className={
+                viewMode === "list"
+                  ? "bg-[var(--surface-2)] text-[var(--text)] border-[var(--border-strong)]"
+                  : "bg-[var(--surface)] text-[var(--muted)]"
+              }
               onClick={() => setViewMode("list")}
             >
               List

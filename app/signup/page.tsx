@@ -43,8 +43,6 @@ export default function SignupPage() {
       return;
     }
 
-    // If email confirmations are ON, Supabase won't create a session yet.
-    // If confirmations are OFF, you may immediately have a session.
     if (data.session) {
       router.push("/dashboard");
       return;
@@ -56,11 +54,14 @@ export default function SignupPage() {
     setLoading(false);
   };
 
+  const inputClass =
+    "mt-1 w-full rounded-xl border border-[var(--border)] px-3 py-2 bg-[var(--surface-2)] text-[var(--text)] outline-none focus:border-[var(--border-strong)]";
+
   return (
-    <main className="min-h-screen flex items-center justify-center p-6">
-      <div className="w-full max-w-sm rounded-2xl border p-6 shadow-sm">
+    <main className="min-h-screen flex items-center justify-center p-6 bg-[var(--background)] text-[var(--text)]">
+      <div className="w-full max-w-sm rounded-2xl border border-[var(--border)] bg-[var(--surface)] p-6 shadow-sm">
         <h1 className="text-2xl font-semibold">Create account</h1>
-        <p className="mt-2 text-sm text-gray-600">
+        <p className="mt-2 text-sm text-[var(--muted)]">
           Request access to RHD. All fields required.
         </p>
 
@@ -73,7 +74,7 @@ export default function SignupPage() {
                 required
                 value={firstName}
                 onChange={(e) => setFirstName(e.target.value)}
-                className="mt-1 w-full rounded-xl border px-3 py-2 bg-black text-white"
+                className={inputClass}
                 placeholder="John"
               />
             </div>
@@ -85,7 +86,7 @@ export default function SignupPage() {
                 required
                 value={lastName}
                 onChange={(e) => setLastName(e.target.value)}
-                className="mt-1 w-full rounded-xl border px-3 py-2 bg-black text-white"
+                className={inputClass}
                 placeholder="Smith"
               />
             </div>
@@ -97,7 +98,7 @@ export default function SignupPage() {
                 required
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-                className="mt-1 w-full rounded-xl border px-3 py-2 bg-black text-white"
+                className={inputClass}
                 placeholder="(615) 555-1234"
               />
             </div>
@@ -109,7 +110,7 @@ export default function SignupPage() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 w-full rounded-xl border px-3 py-2 bg-black text-white"
+                className={inputClass}
                 placeholder="you@example.com"
               />
             </div>
@@ -121,27 +122,27 @@ export default function SignupPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 w-full rounded-xl border px-3 py-2 bg-black text-white"
+                className={inputClass}
                 placeholder="••••••••"
               />
-              <p className="mt-1 text-xs text-white/60">
+              <p className="mt-1 text-xs text-[var(--muted)]">
                 Use at least 8 characters.
               </p>
             </div>
           </div>
 
           {errorMessage && (
-            <p className="text-sm text-red-500">{errorMessage}</p>
+            <p className="text-sm text-[var(--danger)]">{errorMessage}</p>
           )}
 
           {successMessage && (
-            <p className="text-sm text-green-500">{successMessage}</p>
+            <p className="text-sm text-[var(--success)]">{successMessage}</p>
           )}
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full rounded-xl bg-white text-black px-3 py-2 font-medium"
+            className="w-full rounded-xl bg-[var(--accent)] text-white px-3 py-2 font-medium hover:brightness-110 disabled:opacity-60"
           >
             {loading ? "Creating account..." : "Create account"}
           </button>
@@ -149,7 +150,7 @@ export default function SignupPage() {
           <button
             type="button"
             onClick={() => router.push("/login")}
-            className="w-full rounded-xl border px-3 py-2 font-medium"
+            className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 font-medium text-[var(--text)] hover:bg-[var(--surface-2)]"
           >
             Back to sign in
           </button>

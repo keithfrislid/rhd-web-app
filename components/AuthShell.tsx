@@ -28,14 +28,12 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Fetch role from profiles
       const { data: profile, error } = await supabase
         .from("profiles")
         .select("role, is_admin")
         .eq("user_id", session.user.id)
         .maybeSingle();
 
-      // Default safe behavior: if we can’t read role for any reason, treat as pending
       let resolvedRole: Role = "pending";
 
       if (!error && profile) {
@@ -44,7 +42,6 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
         else resolvedRole = "pending";
       }
 
-      // Admin route protection
       if (pathname.startsWith("/admin") && resolvedRole !== "admin") {
         router.replace("/dashboard");
         return;
@@ -55,20 +52,15 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
         setReady(true);
       }
 
-      // If user is no longer pending, stop polling
       if (resolvedRole !== "pending" && intervalId) {
         clearInterval(intervalId);
         intervalId = null;
       }
     };
 
-    // Initial role check
     resolveRole();
-
-    // Poll every 5s ONLY while pending (the interval will be cleared once approved)
     intervalId = setInterval(resolveRole, 5000);
 
-    // Keep auth state handling
     const { data: sub } = supabase.auth.onAuthStateChange((_event, session) => {
       if (!session) router.replace("/login");
     });
@@ -80,18 +72,21 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
     };
   }, [router, pathname]);
 
+  // IMPORTANT: use tokens (not hardcoded black/white) so globals.css actually shows through.
+  const shellClass =
+    "min-h-screen bg-[var(--background)] text-[var(--text)]";
+
   if (!ready) {
     return (
-      <div className="min-h-screen bg-black text-white">
-        <div className="p-6 text-sm text-white/70">Loading…</div>
+      <div className={shellClass}>
+        <div className="p-6 text-sm text-[var(--muted)]">Loading…</div>
       </div>
     );
   }
 
-  // Pending users: show the pending approval screen instead of app pages
   if (role === "pending") {
     return (
-      <div className="min-h-screen bg-black text-white">
+      <div className={shellClass}>
         <TopNav />
         <PendingApproval />
       </div>
@@ -99,7 +94,7 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className={shellClass}>
       <TopNav />
       <div className="mx-auto max-w-5xl px-4 py-6">{children}</div>
     </div>

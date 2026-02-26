@@ -162,15 +162,17 @@ export default function BuyBoxPage() {
                     <Button
                       key={c}
                       onClick={() => toggle(c)}
-                      variant={on ? "primary" : "secondary"}
+                      variant="secondary"
                       size="sm"
                       className={[
-                        "h-auto w-full justify-between rounded-xl px-3 py-2 text-left",
-                        on ? "text-black" : "",
+                        "h-auto w-full justify-between rounded-xl px-3 py-2 text-left transition",
+                        on
+                          ? "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border-strong)]"
+                          : "bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--surface-2)]",
                       ].join(" ")}
                     >
                       <span className="font-semibold">{c}</span>
-                      <span className={on ? "text-black/70" : "text-[var(--muted)]"}>
+                      <span className={on ? "text-[var(--text)]" : "text-[var(--muted)]"}>
                         {on ? "ON" : "OFF"}
                       </span>
                     </Button>

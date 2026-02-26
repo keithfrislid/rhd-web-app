@@ -46,51 +46,77 @@ export default function LeafletMap({
             .leaflet-popup-content-wrapper {
               border-radius: 16px;
               box-shadow: 0 18px 40px rgba(0,0,0,0.20);
-              border: 1px solid rgba(255,255,255,0.10);
-              background: #0b0f14;
-              color: rgba(255,255,255,0.92);
+              border: 1px solid var(--border, rgba(48,54,61,0.85));
+              background: var(--surface, #161b22);
+              color: var(--text, rgba(255,255,255,0.92));
               overflow: hidden;
             }
             .leaflet-popup-content { margin: 0; }
+
             .leaflet-popup-tip {
               box-shadow: 0 14px 30px rgba(0,0,0,0.12);
-              background: #0b0f14;
-              border: 1px solid rgba(255,255,255,0.10);
+              background: var(--surface, #161b22);
+              border: 1px solid var(--border, rgba(48,54,61,0.85));
             }
 
-            /* Popup layout */
+            /* Popup layout (minimal) */
             .rhd-popup {
               font-family: ui-sans-serif, system-ui;
               min-width: 260px;
               max-width: 320px;
             }
-            .rhd-popup-header {
-              padding: 12px 14px;
-              border-bottom: 1px solid rgba(255,255,255,0.10);
-              background: rgba(255,255,255,0.04);
-            }
+
             .rhd-popup-body {
               padding: 12px 14px;
+              display: grid;
+              gap: 10px;
             }
-            .rhd-row {
-              display:flex;
-              align-items:flex-start;
-              justify-content:space-between;
-              gap:10px;
-            }
+
             .rhd-address {
-              font-weight: 750;
-              line-height: 1.2;
-              font-size: 13px;
+              font-weight: 800;
+              font-size: 14px;
+              line-height: 1.25;
+              color: var(--text, rgba(255,255,255,0.92));
+
+              /* Allow 2 lines, then ellipsis */
+              display: -webkit-box;
+              -webkit-line-clamp: 2;
+              -webkit-box-orient: vertical;
               overflow: hidden;
-              text-overflow: ellipsis;
-              white-space: nowrap;
-              max-width: 240px;
             }
-            .rhd-sub {
-              margin-top: 6px;
+
+            .rhd-actions {
+              display: flex;
+              justify-content: flex-end;
+            }
+
+            /* Smaller, “link-like” button that fits the card */
+            .rhd-popup-btn {
+              display: inline-flex;
+              align-items: center;
+              gap: 8px;
+
+              width: auto;              /* key change vs full width */
+              margin-top: 0;            /* remove the big spacing */
+              padding: 8px 10px;
+              border-radius: 12px;
+
+              border: 1px solid var(--border, rgba(48,54,61,0.85));
+              background: var(--surface-2, #21262d);
+              color: var(--text, rgba(255,255,255,0.92));
+
               font-size: 12px;
-              color: rgba(255,255,255,0.68);
+              font-weight: 800;
+              cursor: pointer;
+              user-select: none;
+            }
+
+            .rhd-popup-btn:hover {
+              filter: brightness(1.08);
+            }
+
+            .rhd-popup-btn:active {
+              transform: translateY(0.5px);
             }
 
             /* Badges */
@@ -246,58 +272,19 @@ export default function LeafletMap({
 
         const marker = L.marker([property.lat, property.lng], { icon }).addTo(layer)
 
-        const isViewed = !viewedLoading && viewedIds.has(property.id)
-        const showNew = property.status === "New" && !isViewed
-
         const wrapper = L.DomUtil.create("div")
         wrapper.className = "rhd-popup"
 
-        const underContractBadge =
-          property.status === "Under Contract"
-            ? `<span class="rhd-badge rhd-badge-uc">Under Contract</span>`
-            : ""
-
-        const newBadge = showNew ? `<span class="rhd-badge rhd-badge-new">New</span>` : ""
-
-        const viewedBadge = isViewed ? `<span class="rhd-badge rhd-badge-viewed">Viewed</span>` : ""
-
+        // Popup content (polish): minimal — address + View Details only
         wrapper.innerHTML = `
-          <div class="rhd-popup-header">
-            <div class="rhd-row">
-              <div class="rhd-address" title="${property.address}">${property.address}</div>
-              <div style="display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end;">
-                ${newBadge}
-              </div>
-            </div>
-
-            <div class="rhd-sub">
-              ${property.beds} bd • ${property.baths} ba
-            </div>
-
-            <div class="rhd-badges">
-              ${underContractBadge}
-              ${viewedBadge}
-            </div>
-          </div>
-
           <div class="rhd-popup-body">
-            <div class="rhd-chips">
-              <div class="rhd-chip">
-                <div class="rhd-chip-label">Price</div>
-                <div class="rhd-chip-val">${formatMoney(property.price)}</div>
-              </div>
-              <div class="rhd-chip">
-                <div class="rhd-chip-label">Repairs</div>
-                <div class="rhd-chip-val">${formatMoney(property.repairs)}</div>
-              </div>
-              <div class="rhd-chip">
-                <div class="rhd-chip-label">ARV</div>
-                <div class="rhd-chip-val">${formatMoney(property.arv)}</div>
-              </div>
-            </div>
+            <div class="rhd-address" title="${property.address}">${property.address}</div>
 
-            <button type="button" class="rhd-popup-btn">View Details</button>
-            <div class="rhd-hint">Tap to open deal sheet →</div>
+            <div class="rhd-actions">
+              <button type="button" class="rhd-popup-btn">
+                View details <span aria-hidden="true">→</span>
+              </button>
+            </div>
           </div>
         `
 
