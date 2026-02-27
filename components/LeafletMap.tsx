@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react"
 import "leaflet/dist/leaflet.css"
 
+import { supabase } from "@/lib/supabase"
 import DealSheetPanel from "@/components/DealSheetPanel"
 import { type Property } from "@/lib/properties"
 
@@ -29,6 +30,30 @@ export default function LeafletMap({
 
   const [selected, setSelected] = useState<Property | null>(null)
   const [skipMarkViewedId, setSkipMarkViewedId] = useState<string | null>(null)
+
+  const [pendingOfferIds, setPendingOfferIds] = useState<Set<string>>(new Set())
+
+  // Load pending offer IDs for the current user
+  useEffect(() => {
+    const load = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data } = await supabase
+        .from("offers")
+        .select("property_id")
+        .eq("user_id", user.id)
+        .eq("status", "pending")
+
+      setPendingOfferIds(new Set((data ?? []).map((r: any) => r.property_id as string)))
+    }
+
+    load()
+
+    const handler = () => load()
+    window.addEventListener("rhd:offers-changed", handler)
+    return () => window.removeEventListener("rhd:offers-changed", handler)
+  }, [])
 
   // 2) Create the map ONCE
   useEffect(() => {
@@ -251,10 +276,8 @@ export default function LeafletMap({
       if (!properties || properties.length === 0) return
 
       const pinColorFor = (property: Property) => {
-        // If viewed, make it dark (regardless of status)
+        if (pendingOfferIds.has(property.id)) return "#3b82f6"
         if (!viewedLoading && viewedIds.has(property.id)) return "#111827"
-
-        // Otherwise normal lifecycle colors
         if (property.status === "Under Contract") return "#f59e0b"
         return "#ef4444"
       }
@@ -318,7 +341,7 @@ export default function LeafletMap({
     return () => {
       cancelled = true
     }
-  }, [properties, viewedIds, viewedLoading, loading])
+  }, [properties, viewedIds, viewedLoading, loading, pendingOfferIds])
 
   // 4) Remove map only on unmount
   useEffect(() => {
@@ -368,6 +391,11 @@ export default function LeafletMap({
             <span className="flex items-center gap-1.5 text-[10px] text-white/70">
               <span className="inline-block h-2 w-2 rounded-full bg-[#ef4444]" />
               New
+            </span>
+            <span className="h-3 w-px bg-white/15" />
+            <span className="flex items-center gap-1.5 text-[10px] text-white/70">
+              <span className="inline-block h-2 w-2 rounded-full bg-[#3b82f6]" />
+              Pending
             </span>
             <span className="h-3 w-px bg-white/15" />
             <span className="flex items-center gap-1.5 text-[10px] text-white/70">

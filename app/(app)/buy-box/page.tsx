@@ -7,6 +7,7 @@ import { PageShell } from "@/components/ui/PageShell"
 import { Card, CardContent, CardHeader } from "@/components/ui/Card"
 import { Button } from "@/components/ui/Button"
 import { Badge } from "@/components/ui/Badge"
+import { Input } from "@/components/ui/Input"
 
 type BuyBoxRow = {
   user_id: string
@@ -25,8 +26,15 @@ export default function BuyBoxPage() {
   const [successMsg, setSuccessMsg] = useState<string | null>(null)
 
   const [selected, setSelected] = useState<Set<string>>(new Set())
+  const [search, setSearch] = useState("")
 
   const selectedList = useMemo(() => Array.from(selected).sort(), [selected])
+
+  const visibleCounties = useMemo(() => {
+    const q = search.trim().toLowerCase()
+    if (!q) return MIDDLE_TN_COUNTIES
+    return MIDDLE_TN_COUNTIES.filter((c) => c.toLowerCase().includes(q))
+  }, [search])
 
   useEffect(() => {
     let cancelled = false
@@ -145,8 +153,16 @@ export default function BuyBoxPage() {
       )}
 
       <Card className="mt-6 overflow-hidden">
-        <CardHeader className="flex items-center justify-between gap-2 border-b border-[var(--border)] bg-[var(--surface-2)]">
-          <div className="text-sm font-semibold">Counties</div>
+        <CardHeader className="flex flex-wrap items-center gap-3 border-b border-[var(--border)] bg-[var(--surface-2)]">
+          <div className="flex flex-1 items-center gap-3">
+            <div className="text-sm font-semibold">Counties</div>
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search counties…"
+              className="h-8 max-w-[220px] text-xs"
+            />
+          </div>
           <Badge variant="muted">{loading ? "Loading…" : `${selected.size} selected`}</Badge>
         </CardHeader>
 
@@ -155,30 +171,36 @@ export default function BuyBoxPage() {
             <div className="text-sm text-[var(--muted)]">Loading your buy box…</div>
           ) : (
             <>
-              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                {MIDDLE_TN_COUNTIES.map((c) => {
-                  const on = selected.has(c)
-                  return (
-                    <Button
-                      key={c}
-                      onClick={() => toggle(c)}
-                      variant="secondary"
-                      size="sm"
-                      className={[
-                        "h-auto w-full justify-between rounded-xl px-3 py-2 text-left transition",
-                        on
-                          ? "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border-strong)]"
-                          : "bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--surface-2)]",
-                      ].join(" ")}
-                    >
-                      <span className="font-semibold">{c}</span>
-                      <span className={on ? "text-[var(--text)]" : "text-[var(--muted)]"}>
-                        {on ? "ON" : "OFF"}
-                      </span>
-                    </Button>
-                  )
-                })}
-              </div>
+              {visibleCounties.length === 0 ? (
+                <div className="py-6 text-center text-sm text-[var(--muted)]">
+                  No counties match &ldquo;{search}&rdquo;
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                  {visibleCounties.map((c) => {
+                    const on = selected.has(c)
+                    return (
+                      <Button
+                        key={c}
+                        onClick={() => toggle(c)}
+                        variant="secondary"
+                        size="sm"
+                        className={[
+                          "h-auto w-full justify-between rounded-xl px-3 py-2 text-left transition",
+                          on
+                            ? "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border-strong)]"
+                            : "bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--surface-2)]",
+                        ].join(" ")}
+                      >
+                        <span className="font-semibold">{c}</span>
+                        <span className={on ? "text-[var(--text)]" : "text-[var(--muted)]"}>
+                          {on ? "ON" : "OFF"}
+                        </span>
+                      </Button>
+                    )
+                  })}
+                </div>
+              )}
 
               <div className="mt-4 text-xs text-[var(--muted)]">
                 Tip: Keep this broad for now. We’ll add price ranges, bed/bath, and ARV constraints later.

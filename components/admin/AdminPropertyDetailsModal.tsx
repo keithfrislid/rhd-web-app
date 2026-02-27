@@ -156,21 +156,23 @@ export default function AdminPropertyDetailsModal({
                 <Stat label="Baths" value={`${property.baths ?? 0}`} />
                 <Stat label="ARV" value={formatMoney(property.arv)} />
                 <Stat label="Repairs" value={formatMoney(property.repairs)} />
+                <Stat label="Sqft" value={(property.sqft ?? 0).toLocaleString()} />
+                <Stat label="Acres" value={`${property.acres ?? 0}`} />
               </div>
 
-              <div className="mt-4 grid gap-2 text-xs text-[var(--muted)]">
-                <Line label="Created" value={formatDateTime(property.created_at)} />
-                <Line label="VIP release" value={formatDateTime(property.vip_release_at)} />
-                <Line label="Public release" value={formatDateTime(property.public_release_at)} />
+              <div className="mt-4 grid grid-cols-2 gap-3 text-xs text-[var(--muted)]">
+                <Stat label="Created" value={formatDateTime(property.created_at)} />
+                <Stat label="VIP release" value={formatDateTime(property.vip_release_at)} />
+                <Stat label="Public release" value={formatDateTime(property.public_release_at)} />
 
                 {!!property.is_archived && (
                   <>
-                    <Line label="Closed at" value={formatDateTime(property.closed_at)} />
-                    <Line label="Closed reason" value={property.closed_reason || "—"} />
+                    <Stat label="Closed at" value={formatDateTime(property.closed_at)} />
+                    <Stat label="Closed reason" value={property.closed_reason || "—"} />
                   </>
                 )}
 
-                <Line
+                <Stat
                   label="Location"
                   value={
                     property.lat && property.lng
@@ -202,15 +204,6 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div>
       <div className="text-[11px] text-[var(--muted)]">{label}</div>
       <div className="mt-0.5 text-sm font-semibold text-[var(--text)]">{value}</div>
-    </div>
-  )
-}
-
-function Line({ label, value }: { label: string; value: string }) {
-  return (
-    <div className="flex items-start justify-between gap-3">
-      <div className="shrink-0">{label}</div>
-      <div className="text-right text-[var(--text)]">{value}</div>
     </div>
   )
 }
