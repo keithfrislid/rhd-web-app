@@ -24,8 +24,6 @@ type ViewMode = "map" | "list"
 
 export default function DashboardPage() {
   const [viewMode, setViewMode] = useState<ViewMode>("map")
-  const [showUnderContract, setShowUnderContract] = useState(false)
-
   const [properties, setProperties] = useState<Property[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -34,9 +32,7 @@ export default function DashboardPage() {
 
     const run = async () => {
       setLoading(true)
-      const rows = await fetchProperties({
-        includeUnderContract: showUnderContract,
-      })
+      const rows = await fetchProperties({})
       if (cancelled) return
       setProperties(rows)
       setLoading(false)
@@ -46,7 +42,7 @@ export default function DashboardPage() {
     return () => {
       cancelled = true
     }
-  }, [showUnderContract])
+  }, [])
 
   const propertyIds = useMemo(() => properties.map((p) => p.id), [properties])
   const { viewedIds, viewedLoading, markViewed } = useViewedProperties(propertyIds)
@@ -90,27 +86,6 @@ export default function DashboardPage() {
             </Button>
           </div>
 
-          <Card className="rounded-xl">
-            <CardContent className="flex items-center gap-2 px-3 py-2">
-              <input
-                id="show-under-contract"
-                type="checkbox"
-                checked={showUnderContract}
-                onChange={(e) => setShowUnderContract(e.target.checked)}
-                className="h-4 w-4 accent-white"
-              />
-              <label
-                htmlFor="show-under-contract"
-                className="cursor-pointer text-sm text-[var(--muted)]"
-              >
-                Show Under Contract
-              </label>
-
-              <Badge variant="muted" className="ml-1">
-                {loading ? "Loading…" : `${properties.length}`}
-              </Badge>
-            </CardContent>
-          </Card>
         </div>
       </div>
 

@@ -288,7 +288,7 @@ export default function AdminCreatePropertyModal({
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-[5000] flex items-end justify-center bg-black/70 p-3 backdrop-blur-sm md:items-center">
+    <div className="fixed inset-0 z-[7000] flex items-end justify-center bg-black/70 p-3 backdrop-blur-sm md:items-center">
       <ModalShell
         title="Add Property"
         description="Create a new deal and control its release visibility."
@@ -320,9 +320,9 @@ export default function AdminCreatePropertyModal({
             </Button>
           </div>
         }
-        className="overflow-hidden"
+        className="flex max-h-[90vh] flex-col overflow-hidden"
       >
-        <div className="max-h-[80vh] space-y-4 overflow-y-auto p-5">
+        <div className="space-y-4">
           {errorMsg && (
             <div className="rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-3 text-sm text-[var(--text)]">
               {errorMsg}

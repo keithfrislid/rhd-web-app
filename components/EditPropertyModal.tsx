@@ -350,7 +350,7 @@ export default function EditPropertyModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[5000] flex items-end justify-center bg-black/70 p-3 backdrop-blur-sm md:items-center">
+    <div className="fixed inset-0 z-[7000] flex items-end justify-center bg-black/70 p-3 backdrop-blur-sm md:items-center">
       <ModalShell
         title="Edit Property"
         description="Admin"
@@ -359,9 +359,24 @@ export default function EditPropertyModal({
             Close
           </Button>
         }
-        className="overflow-hidden"
+        className="flex max-h-[90vh] flex-col overflow-hidden"
+        footer={
+          <div className="flex gap-2">
+            <Button onClick={onClose} variant="secondary" className="flex-1">
+              Cancel
+            </Button>
+            <Button
+              disabled={!canSubmit || saving}
+              onClick={save}
+              variant="primary"
+              className={cn("flex-1", !canSubmit || saving ? "opacity-70" : "")}
+            >
+              {saving ? "Saving…" : "Save Changes"}
+            </Button>
+          </div>
+        }
       >
-        <div className="max-h-[80vh] space-y-4 overflow-y-auto p-5">
+        <div className="space-y-4">
           {errorMsg && (
             <div className="rounded-2xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-3 text-sm text-[var(--danger)]">
               {errorMsg}
@@ -654,21 +669,6 @@ export default function EditPropertyModal({
             </CardContent>
           </Card>
 
-          {/* Footer actions */}
-          <div className="flex gap-2 pt-1">
-            <Button onClick={onClose} variant="secondary" className="flex-1">
-              Cancel
-            </Button>
-
-            <Button
-              disabled={!canSubmit || saving}
-              onClick={save}
-              variant="primary"
-              className={cn("flex-1", !canSubmit || saving ? "opacity-70" : "")}
-            >
-              {saving ? "Saving…" : "Save Changes"}
-            </Button>
-          </div>
         </div>
       </ModalShell>
     </div>
