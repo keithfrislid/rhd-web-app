@@ -1,10 +1,10 @@
 "use client"
 
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import "leaflet/dist/leaflet.css"
 
 import DealSheetPanel from "@/components/DealSheetPanel"
-import { type Property, formatMoney } from "@/lib/properties"
+import { type Property } from "@/lib/properties"
 
 export default function LeafletMap({
   properties,
@@ -12,18 +12,23 @@ export default function LeafletMap({
   viewedIds,
   viewedLoading,
   markViewed,
+  unmarkViewed,
+  onSwitchToList,
 }: {
   properties: Property[]
   loading: boolean
   viewedIds: Set<string>
   viewedLoading: boolean
   markViewed: (propertyId: string) => void | Promise<void>
+  unmarkViewed: (propertyId: string) => void | Promise<void>
+  onSwitchToList?: () => void
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapInstanceRef = useRef<any>(null)
   const markersLayerRef = useRef<any>(null)
 
   const [selected, setSelected] = useState<Property | null>(null)
+  const [skipMarkViewedId, setSkipMarkViewedId] = useState<string | null>(null)
 
   // 2) Create the map ONCE
   useEffect(() => {
@@ -204,8 +209,10 @@ export default function LeafletMap({
         // In case hot reload / remount keeps old leaflet id
         ;(containerRef.current as any)._leaflet_id = null
 
-        const map = L.map(containerRef.current!)
+        const map = L.map(containerRef.current!, { zoomControl: false })
         mapInstanceRef.current = map
+
+        L.control.zoom({ position: "topright" }).addTo(map)
 
         L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
           attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
@@ -327,13 +334,46 @@ export default function LeafletMap({
     <div className="relative w-full isolate">
       <div
         ref={containerRef}
-        className="w-full h-[70vh] min-h-[520px] rounded-xl overflow-hidden relative z-0"
+        className="w-full h-[calc(100svh-80px)] md:h-[72vh] md:min-h-[520px] min-h-[400px] rounded-xl overflow-hidden relative z-0"
       />
+
+      {/* Map / List toggle — left side, below zoom controls */}
+      {onSwitchToList && (
+        <div className="absolute top-3 left-3 z-[1500] pointer-events-auto">
+          <div className="flex items-center rounded-full border border-[var(--border)] bg-black/70 backdrop-blur overflow-hidden">
+            <span className="px-3 py-1.5 text-xs font-semibold text-white select-none">Map</span>
+            <div className="w-px h-4 bg-white/20" />
+            <button
+              onClick={onSwitchToList}
+              className="px-3 py-1.5 text-xs font-semibold text-white/60 hover:text-white transition-colors"
+            >
+              List
+            </button>
+          </div>
+        </div>
+      )}
 
       {loading && (
         <div className="absolute inset-x-0 top-3 z-[1500] flex justify-center pointer-events-none">
           <div className="rounded-full border border-[var(--border)] bg-black/60 px-3 py-1 text-xs text-[var(--muted)] backdrop-blur">
             Loading properties…
+          </div>
+        </div>
+      )}
+
+      {/* Pin legend — bottom-right */}
+      {!loading && (
+        <div className="absolute bottom-6 right-3 z-[1500] pointer-events-none">
+          <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/70 backdrop-blur px-3 py-1.5">
+            <span className="flex items-center gap-1.5 text-[10px] text-white/70">
+              <span className="inline-block h-2 w-2 rounded-full bg-[#ef4444]" />
+              New
+            </span>
+            <span className="h-3 w-px bg-white/15" />
+            <span className="flex items-center gap-1.5 text-[10px] text-white/70">
+              <span className="inline-block h-2 w-2 rounded-full bg-[#374151]" />
+              Viewed
+            </span>
           </div>
         </div>
       )}
@@ -344,10 +384,17 @@ export default function LeafletMap({
             <DealSheetPanel
               selected={selected}
               onClose={() => {
-                markViewed(selected.id)
+                if (skipMarkViewedId !== selected.id) {
+                  markViewed(selected.id)
+                }
+                setSkipMarkViewedId(null)
                 setSelected(null)
               }}
               isViewed={viewedIds.has(selected.id)}
+              onMarkNew={() => {
+                unmarkViewed(selected.id)
+                setSkipMarkViewedId(selected.id)
+              }}
             />
           </div>
         </div>

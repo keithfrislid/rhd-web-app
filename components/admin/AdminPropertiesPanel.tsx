@@ -61,7 +61,7 @@ export default function AdminPropertiesPanel({
   onOpen,
 }: Props) {
   const [search, setSearch] = useState("")
-  const [lifecycle, setLifecycle] = useState<LifecycleView>("all")
+  const [lifecycle, setLifecycle] = useState<LifecycleView>("active")
 
   const filteredAndSorted = useMemo(() => {
     const q = search.trim().toLowerCase()
@@ -121,12 +121,12 @@ export default function AdminPropertiesPanel({
           />
 
           <Select value={lifecycle} onChange={(e) => setLifecycle(e.target.value as LifecycleView)}>
-            <option value="all">Filter: All</option>
             <option value="active">Filter: Active</option>
             <option value="under_contract">Filter: Under Contract</option>
             <option value="closed_won">Filter: Closed Won</option>
             <option value="closed_lost">Filter: Closed Lost</option>
             <option value="pending_offers">Filter: Pending Offers</option>
+            <option value="all">Filter: All</option>
           </Select>
         </div>
 
@@ -171,17 +171,13 @@ export default function AdminPropertiesPanel({
                         </span>
                       </div>
 
-                      <div className="mt-2 flex flex-wrap items-center gap-2">
-                        {pendingForProp > 0 && (
+                      {pendingForProp > 0 && (
+                        <div className="mt-2 flex flex-wrap items-center gap-2">
                           <Badge variant="accent" title="Pending offers">
                             {pendingForProp} pending offer{pendingForProp === 1 ? "" : "s"}
                           </Badge>
-                        )}
-
-                        <div className="text-[11px] text-[var(--muted)]">
-                          ID: {p.id.slice(0, 6)}…{p.id.slice(-4)}
                         </div>
-                      </div>
+                      )}
                     </div>
 
                     <div className="shrink-0">

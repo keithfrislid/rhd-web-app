@@ -25,12 +25,14 @@ export default function PropertyListView({
   viewedIds,
   viewedLoading,
   markViewed,
+  onSwitchToMap,
 }: {
   properties: Property[]
   loading: boolean
   viewedIds: Set<string>
   viewedLoading: boolean
   markViewed: (propertyId: string) => void | Promise<void>
+  onSwitchToMap?: () => void
 }) {
   const [selected, setSelected] = useState<Property | null>(null)
   const [sortMode, setSortMode] = useState<SortMode>("newest")
@@ -209,7 +211,22 @@ export default function PropertyListView({
       <Card className="overflow-hidden">
         <CardHeader className="border-b border-[var(--border)] bg-[var(--surface-2)]">
           <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="text-sm font-semibold">Properties</div>
+            <div className="flex items-center gap-2">
+              <div className="text-sm font-semibold">Properties</div>
+
+              {onSwitchToMap && (
+                <div className="flex items-center rounded-full border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+                  <button
+                    onClick={onSwitchToMap}
+                    className="px-3 py-1 text-xs font-semibold text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+                  >
+                    Map
+                  </button>
+                  <div className="w-px h-4 bg-[var(--border)]" />
+                  <span className="px-3 py-1 text-xs font-semibold text-[var(--text)] select-none">List</span>
+                </div>
+              )}
+            </div>
 
             <div className="flex flex-wrap items-center gap-2">
               <Badge variant="muted">{activeCountLabel}</Badge>

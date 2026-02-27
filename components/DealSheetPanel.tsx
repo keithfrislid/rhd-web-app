@@ -49,10 +49,12 @@ export default function DealSheetPanel({
   selected,
   onClose,
   isViewed = false,
+  onMarkNew,
 }: {
   selected: Property
   onClose: () => void
   isViewed?: boolean
+  onMarkNew?: () => void
 }) {
   const spread = selected.arv - selected.price - selected.repairs
 
@@ -375,6 +377,15 @@ export default function DealSheetPanel({
               {userOffer?.status === "pending" && <StatusBadge kind="offer_pending" />}
               {userOffer?.status === "accepted" && <StatusBadge kind="offer_accepted" />}
               {userOffer?.status === "rejected" && <StatusBadge kind="offer_rejected" />}
+
+              {isViewed && onMarkNew && (
+                <button
+                  onClick={onMarkNew}
+                  className="inline-flex items-center rounded-full border border-[var(--border)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-colors cursor-pointer"
+                >
+                  Mark New
+                </button>
+              )}
             </div>
           </div>
 

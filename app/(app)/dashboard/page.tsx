@@ -7,9 +7,6 @@ import { fetchProperties, type Property } from "@/lib/properties"
 import { useViewedProperties } from "@/lib/hooks/useViewedProperties"
 
 import { PageShell } from "@/components/ui/PageShell"
-import { Card, CardContent } from "@/components/ui/Card"
-import { Button } from "@/components/ui/Button"
-import { Badge } from "@/components/ui/Badge"
 
 const LeafletMap = dynamic(() => import("@/components/LeafletMap"), {
   ssr: false,
@@ -45,69 +42,46 @@ export default function DashboardPage() {
   }, [])
 
   const propertyIds = useMemo(() => properties.map((p) => p.id), [properties])
-  const { viewedIds, viewedLoading, markViewed } = useViewedProperties(propertyIds)
+  const { viewedIds, viewedLoading, markViewed, unmarkViewed } = useViewedProperties(propertyIds)
 
   return (
     <PageShell>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">Browse Deals</h1>
-          <p className="mt-1 text-sm text-[var(--muted)]">
-            Map-first browsing with compact investor list view.
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              className={
-                viewMode === "map"
-                  ? "bg-[var(--surface-2)] text-[var(--text)] border-[var(--border-strong)]"
-                  : "bg-[var(--surface)] text-[var(--muted)]"
-              }
-              onClick={() => setViewMode("map")}
-            >
-              Map
-            </Button>
-
-            <Button
-              variant="secondary"
-              size="sm"
-              className={
-                viewMode === "list"
-                  ? "bg-[var(--surface-2)] text-[var(--text)] border-[var(--border-strong)]"
-                  : "bg-[var(--surface)] text-[var(--muted)]"
-              }
-              onClick={() => setViewMode("list")}
-            >
-              List
-            </Button>
+      {viewMode === "map" && (
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <div className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
+              Off-Market Properties
+            </div>
+            <h1 className="text-xl font-bold leading-tight">Browse Deals</h1>
           </div>
-
+          {!loading && properties.length > 0 && (
+            <div className="shrink-0 rounded-full border border-[var(--border)] bg-[var(--surface-2)] px-3 py-1 text-xs font-semibold text-[var(--text)]">
+              {properties.length} active
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
-      <div className="mt-6">
-        {viewMode === "map" ? (
-          <LeafletMap
-            properties={properties}
-            loading={loading}
-            viewedIds={viewedIds}
-            viewedLoading={viewedLoading}
-            markViewed={markViewed}
-          />
-        ) : (
-          <PropertyListView
-            properties={properties}
-            loading={loading}
-            viewedIds={viewedIds}
-            viewedLoading={viewedLoading}
-            markViewed={markViewed}
-          />
-        )}
-      </div>
+      {viewMode === "map" ? (
+        <LeafletMap
+          properties={properties}
+          loading={loading}
+          viewedIds={viewedIds}
+          viewedLoading={viewedLoading}
+          markViewed={markViewed}
+          unmarkViewed={unmarkViewed}
+          onSwitchToList={() => setViewMode("list")}
+        />
+      ) : (
+        <PropertyListView
+          properties={properties}
+          loading={loading}
+          viewedIds={viewedIds}
+          viewedLoading={viewedLoading}
+          markViewed={markViewed}
+          onSwitchToMap={() => setViewMode("map")}
+        />
+      )}
     </PageShell>
   )
 }

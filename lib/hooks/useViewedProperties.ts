@@ -94,8 +94,31 @@ export function useViewedProperties(propertyIds: string[]) {
         { onConflict: "user_id,property_id" }
       )
     } catch {
-      // If it fails, we don't “unview” — it's not worth the jank.
+      // If it fails, we don't "unview" — it's not worth the jank.
       // Next refresh will re-sync from DB.
+    }
+  }
+
+  const unmarkViewed = async (propertyId: string) => {
+    try {
+      const { data: userRes } = await supabase.auth.getUser()
+      const user = userRes.user
+      if (!user) return
+
+      // Optimistic update
+      setViewedIds((prev) => {
+        const next = new Set(prev)
+        next.delete(propertyId)
+        return next
+      })
+
+      await supabase
+        .from("viewed_properties")
+        .delete()
+        .eq("user_id", user.id)
+        .eq("property_id", propertyId)
+    } catch {
+      // Sync will correct on next load.
     }
   }
 
@@ -103,5 +126,6 @@ export function useViewedProperties(propertyIds: string[]) {
     viewedIds,
     viewedLoading: loading || shouldTreatAsLoading,
     markViewed,
+    unmarkViewed,
   }
 }
