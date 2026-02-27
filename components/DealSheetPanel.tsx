@@ -359,7 +359,21 @@ export default function DealSheetPanel({
                 {selected.address}
               </div>
 
-              {selected.status === "New" && !isViewed && <StatusBadge kind="new" className="shrink-0" />}
+              <div className="flex shrink-0 items-center gap-1.5">
+                {selected.visibility === "exclusive" && (
+                  <span className="inline-flex items-center rounded-full border border-purple-400/40 bg-purple-500/15 px-2 py-0.5 text-[10px] font-semibold text-purple-500">
+                    First Dibs
+                  </span>
+                )}
+                {selected.visibility === "vip" && (
+                  <span className="inline-flex items-center rounded-full border border-yellow-400/40 bg-yellow-500/15 px-2 py-0.5 text-[10px] font-semibold text-yellow-600 dark:text-yellow-400">
+                    VIP Access
+                  </span>
+                )}
+                {selected.status === "New" && !isViewed && selected.visibility === "public" && (
+                  <StatusBadge kind="new" />
+                )}
+              </div>
             </div>
 
             {/* Hybrid offer signals */}

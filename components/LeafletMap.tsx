@@ -276,10 +276,12 @@ export default function LeafletMap({
       if (!properties || properties.length === 0) return
 
       const pinColorFor = (property: Property) => {
-        if (pendingOfferIds.has(property.id)) return "#3b82f6"
-        if (!viewedLoading && viewedIds.has(property.id)) return "#111827"
-        if (property.status === "Under Contract") return "#f59e0b"
-        return "#ef4444"
+        if (pendingOfferIds.has(property.id)) return "#3b82f6"       // blue  — pending offer
+        if (property.visibility === "exclusive")   return "#a855f7"  // purple — first dibs
+        if (property.visibility === "vip")         return "#eab308"  // gold   — VIP access
+        if (!viewedLoading && viewedIds.has(property.id)) return "#374151" // dark — viewed
+        if (property.status === "Under Contract")  return "#f59e0b"  // amber  — under contract
+        return "#ef4444"                                              // red    — new
       }
 
       properties.forEach((property) => {
@@ -389,17 +391,17 @@ export default function LeafletMap({
         <div className="absolute bottom-6 right-3 z-[1500] pointer-events-none">
           <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/70 backdrop-blur px-3 py-1.5">
             <span className="flex items-center gap-1.5 text-[10px] text-white/70">
-              <span className="inline-block h-2 w-2 rounded-full bg-[#ef4444]" />
+              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#ef4444]" />
               New
             </span>
             <span className="h-3 w-px bg-white/15" />
             <span className="flex items-center gap-1.5 text-[10px] text-white/70">
-              <span className="inline-block h-2 w-2 rounded-full bg-[#3b82f6]" />
+              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#3b82f6]" />
               Pending
             </span>
             <span className="h-3 w-px bg-white/15" />
             <span className="flex items-center gap-1.5 text-[10px] text-white/70">
-              <span className="inline-block h-2 w-2 rounded-full bg-[#374151]" />
+              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#374151]" />
               Viewed
             </span>
           </div>

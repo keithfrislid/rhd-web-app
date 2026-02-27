@@ -5,6 +5,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { supabase } from "@/lib/supabase"
 import { isCurrentUserAdmin } from "@/lib/admin"
+import { useTheme } from "@/components/ThemeProvider"
 
 function NavLink({ href, label }: { href: string; label: string }) {
   const pathname = usePathname()
@@ -27,6 +28,7 @@ function NavLink({ href, label }: { href: string; label: string }) {
 
 export default function TopNav() {
   const router = useRouter()
+  const { theme, toggleTheme } = useTheme()
   const [loadingNav, setLoadingNav] = useState(true)
   const [email, setEmail] = useState<string>("")
   const [isAdmin, setIsAdmin] = useState(false)
@@ -105,6 +107,25 @@ export default function TopNav() {
 
         <div className="flex items-center gap-2">
           <div className="hidden md:block text-xs text-[var(--muted)]">{email}</div>
+
+          <button
+            onClick={toggleTheme}
+            aria-label="Toggle theme"
+            className="rounded-xl border border-[var(--border)] px-2.5 py-2 text-[var(--muted)] hover:bg-[var(--surface)] hover:text-[var(--text)] transition-colors"
+          >
+            {theme === "dark" ? (
+              /* Sun icon */
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="4"/>
+                <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/>
+              </svg>
+            ) : (
+              /* Moon icon */
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>
+              </svg>
+            )}
+          </button>
 
           <button
             onClick={async () => {

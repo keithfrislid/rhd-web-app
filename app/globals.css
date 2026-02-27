@@ -3,18 +3,16 @@
 
 :root {
   /*
-    Design Tokens (Polish Phase)
-    Goal: Move from stark black to GitHub-like blue/gray dark.
-    Components should prefer these variables over hardcoded colors.
+    Design Tokens — Dark theme (default)
+    GitHub-dark inspired. Components use these variables over hardcoded colors.
   */
 
-  /* Helps native inputs/scrollbars match the dark theme */
   color-scheme: dark;
 
-  /* Surfaces (GitHub-dark inspired) */
-  --background: #0d1117; /* page background */
-  --surface: #161b22;    /* primary surface */
-  --surface-2: #21262d;  /* elevated surface */
+  /* Surfaces */
+  --background: #0d1117;
+  --surface: #161b22;
+  --surface-2: #21262d;
 
   /* Text */
   --text: #c9d1d9;
@@ -25,7 +23,7 @@
   --border-strong: rgba(72, 79, 88, 0.95);
 
   /* Accent + status */
-  --accent: #2f81f7; /* GitHub-ish blue */
+  --accent: #2f81f7;
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
@@ -34,16 +32,34 @@
   --ring: rgba(47, 129, 247, 0.55);
 }
 
+/* Light theme — applied via data-theme="light" on <html> */
+[data-theme="light"] {
+  color-scheme: light;
+
+  --background: #edf0f4;  /* soft blue-gray canvas */
+  --surface: #f4f6f9;     /* card surfaces — warm off-white, not stark */
+  --surface-2: #e8ecf1;   /* elevated/secondary surfaces */
+
+  --text: #1f2328;
+  --muted: rgba(75, 85, 99, 0.85);
+
+  --border: rgba(190, 199, 213, 0.85);
+  --border-strong: rgba(155, 167, 184, 0.95);
+
+  --accent: #0969da;
+  --success: #1a7f37;
+  --warning: #9a6700;
+  --danger: #cf222e;
+
+  --ring: rgba(9, 105, 218, 0.4);
+}
+
 html,
 body {
   height: 100%;
 }
 
 body {
-  /*
-    Subtle blue depth so the background doesn’t feel like a flat void.
-    Still dark, but less “pure black”.
-  */
   background:
     radial-gradient(
       1200px 700px at 50% -200px,
@@ -54,4 +70,8 @@ body {
 
   color: var(--text);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+html[data-theme="light"] body {
+  background: var(--background);
 }

@@ -93,7 +93,11 @@ Deno.serve(async (req) => {
       return json({ error: "Geoapify returned no coordinates." }, 502);
     }
 
-    return json({ lat, lng, formatted });
+    // Strip " County" suffix if present (e.g. "Davidson County" → "Davidson")
+    const rawCounty: string = first?.county ?? "";
+    const county = rawCounty.replace(/\s+county$/i, "").trim() || null;
+
+    return json({ lat, lng, formatted, county });
   } catch (e) {
     return json({ error: String(e) }, 500);
   }

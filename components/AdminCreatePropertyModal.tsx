@@ -27,11 +27,10 @@ function toNumber(val: string) {
   return Number.isFinite(n) ? n : NaN
 }
 
-function toIsoFromDateTimeLocal(v: string): string | null {
-  if (!v?.trim()) return null
-  const d = new Date(v)
-  if (Number.isNaN(d.getTime())) return null
-  return d.toISOString()
+function hoursFromNowIso(hours: string): string | null {
+  const h = parseFloat(hours)
+  if (!Number.isFinite(h) || h <= 0) return null
+  return new Date(Date.now() + h * 60 * 60 * 1000).toISOString()
 }
 
 export default function AdminCreatePropertyModal({
@@ -54,8 +53,8 @@ export default function AdminCreatePropertyModal({
 
   const [visibility, setVisibility] = useState<Visibility>("public")
   const [exclusiveUserId, setExclusiveUserId] = useState<string>("")
-  const [vipReleaseLocal, setVipReleaseLocal] = useState<string>("")
-  const [publicReleaseLocal, setPublicReleaseLocal] = useState<string>("")
+  const [vipHours, setVipHours] = useState<string>("")
+  const [publicHours, setPublicHours] = useState<string>("")
 
   const [vipBuyers, setVipBuyers] = useState<VipBuyer[]>([])
   const [vipLoading, setVipLoading] = useState(false)
@@ -106,8 +105,8 @@ export default function AdminCreatePropertyModal({
     setStatus("New")
     setVisibility("public")
     setExclusiveUserId("")
-    setVipReleaseLocal("")
-    setPublicReleaseLocal("")
+    setVipHours("")
+    setPublicHours("")
     setPrice("")
     setBeds("")
     setBaths("")
@@ -187,6 +186,9 @@ export default function AdminCreatePropertyModal({
       setLat(String(json.lat))
       setLng(String(json.lng))
       setGeocodedLabel(json.formatted ?? null)
+      if (json.county && !county.trim()) {
+        setCounty(json.county)
+      }
     } catch (e: any) {
       setErrorMsg(e?.message ?? "Geocoding failed.")
     } finally {
@@ -195,29 +197,21 @@ export default function AdminCreatePropertyModal({
   }
 
   const applyPreset = (preset: "public_now" | "vip_now_public_24h" | "exclusive_now_vip_6h_public_24h") => {
-    const now = new Date()
-    const toLocal = (d: Date) => {
-      const pad = (n: number) => String(n).padStart(2, "0")
-      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`
-    }
-
     if (preset === "public_now") {
       setVisibility("public")
-      setVipReleaseLocal("")
-      setPublicReleaseLocal("")
+      setVipHours("")
+      setPublicHours("")
       return
     }
-
     if (preset === "vip_now_public_24h") {
       setVisibility("vip")
-      setVipReleaseLocal("")
-      setPublicReleaseLocal(toLocal(new Date(now.getTime() + 24 * 60 * 60 * 1000)))
+      setVipHours("")
+      setPublicHours("24")
       return
     }
-
     setVisibility("exclusive")
-    setVipReleaseLocal(toLocal(new Date(now.getTime() + 6 * 60 * 60 * 1000)))
-    setPublicReleaseLocal(toLocal(new Date(now.getTime() + 24 * 60 * 60 * 1000)))
+    setVipHours("6")
+    setPublicHours("24")
   }
 
   const goToStep2 = () => {
@@ -255,8 +249,8 @@ export default function AdminCreatePropertyModal({
       county: county.trim() || null,
       auto_notify: autoNotify,
       visibility,
-      vip_release_at: toIsoFromDateTimeLocal(vipReleaseLocal),
-      public_release_at: toIsoFromDateTimeLocal(publicReleaseLocal),
+      vip_release_at: hoursFromNowIso(vipHours),
+      public_release_at: hoursFromNowIso(publicHours),
       exclusive_user_id: visibility === "exclusive" ? exclusiveUserId : null,
     })
 
@@ -410,31 +404,31 @@ export default function AdminCreatePropertyModal({
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
               <div>
                 <label className="text-xs text-[var(--muted)]">Price *</label>
-                <Input value={price} onChange={(e) => setPrice(e.target.value)} className="mt-1" />
+                <Input value={price} onChange={(e) => setPrice(e.target.value)} placeholder="150000" className="mt-1" />
               </div>
               <div>
                 <label className="text-xs text-[var(--muted)]">Beds *</label>
-                <Input value={beds} onChange={(e) => setBeds(e.target.value)} className="mt-1" />
+                <Input value={beds} onChange={(e) => setBeds(e.target.value)} placeholder="3" className="mt-1" />
               </div>
               <div>
                 <label className="text-xs text-[var(--muted)]">Baths *</label>
-                <Input value={baths} onChange={(e) => setBaths(e.target.value)} className="mt-1" />
+                <Input value={baths} onChange={(e) => setBaths(e.target.value)} placeholder="2" className="mt-1" />
               </div>
               <div>
                 <label className="text-xs text-[var(--muted)]">Sqft *</label>
-                <Input value={sqft} onChange={(e) => setSqft(e.target.value)} className="mt-1" />
+                <Input value={sqft} onChange={(e) => setSqft(e.target.value)} placeholder="1400" className="mt-1" />
               </div>
               <div>
                 <label className="text-xs text-[var(--muted)]">Acres *</label>
-                <Input value={acres} onChange={(e) => setAcres(e.target.value)} className="mt-1" />
+                <Input value={acres} onChange={(e) => setAcres(e.target.value)} placeholder="0.25" className="mt-1" />
               </div>
               <div>
                 <label className="text-xs text-[var(--muted)]">ARV *</label>
-                <Input value={arv} onChange={(e) => setArv(e.target.value)} className="mt-1" />
+                <Input value={arv} onChange={(e) => setArv(e.target.value)} placeholder="225000" className="mt-1" />
               </div>
               <div>
                 <label className="text-xs text-[var(--muted)]">Repairs *</label>
-                <Input value={repairs} onChange={(e) => setRepairs(e.target.value)} className="mt-1" />
+                <Input value={repairs} onChange={(e) => setRepairs(e.target.value)} placeholder="30000" className="mt-1" />
               </div>
               <div>
                 <label className="text-xs text-[var(--muted)]">Lat / Lng</label>
@@ -491,25 +485,71 @@ export default function AdminCreatePropertyModal({
                 </div>
 
                 <div>
-                  <label className="text-xs text-[var(--muted)]">VIP release (optional)</label>
-                  <Input
-                    type="datetime-local"
-                    value={vipReleaseLocal}
-                    onChange={(e) => setVipReleaseLocal(e.target.value)}
-                    className="mt-1"
-                  />
-                  <div className="mt-1 text-[11px] text-[var(--muted)]">Blank = VIP can see now.</div>
+                  <label className="text-xs text-[var(--muted)]">VIP release delay (optional)</label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={vipHours}
+                      onChange={(e) => setVipHours(e.target.value)}
+                      placeholder="0"
+                      className="w-20"
+                    />
+                    <span className="text-xs text-[var(--muted)]">hrs</span>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {["1", "6", "12", "24", "48", "72"].map((h) => (
+                      <button
+                        key={h}
+                        type="button"
+                        onClick={() => setVipHours(h)}
+                        className={cn(
+                          "rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors",
+                          vipHours === h
+                            ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                            : "border-[var(--border)] text-[var(--muted)] hover:border-[var(--border-strong)] hover:text-[var(--text)]"
+                        )}
+                      >
+                        {h}h
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-1 text-[11px] text-[var(--muted)]">Blank or 0 = VIPs see now.</div>
                 </div>
 
                 <div>
-                  <label className="text-xs text-[var(--muted)]">Public release (optional)</label>
-                  <Input
-                    type="datetime-local"
-                    value={publicReleaseLocal}
-                    onChange={(e) => setPublicReleaseLocal(e.target.value)}
-                    className="mt-1"
-                  />
-                  <div className="mt-1 text-[11px] text-[var(--muted)]">Blank = Public can see now.</div>
+                  <label className="text-xs text-[var(--muted)]">Public release delay (optional)</label>
+                  <div className="mt-1 flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={publicHours}
+                      onChange={(e) => setPublicHours(e.target.value)}
+                      placeholder="0"
+                      className="w-20"
+                    />
+                    <span className="text-xs text-[var(--muted)]">hrs</span>
+                  </div>
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {["1", "6", "12", "24", "48", "72"].map((h) => (
+                      <button
+                        key={h}
+                        type="button"
+                        onClick={() => setPublicHours(h)}
+                        className={cn(
+                          "rounded-full border px-2 py-0.5 text-[10px] font-semibold transition-colors",
+                          publicHours === h
+                            ? "border-[var(--accent)] bg-[var(--accent)] text-white"
+                            : "border-[var(--border)] text-[var(--muted)] hover:border-[var(--border-strong)] hover:text-[var(--text)]"
+                        )}
+                      >
+                        {h}h
+                      </button>
+                    ))}
+                  </div>
+                  <div className="mt-1 text-[11px] text-[var(--muted)]">Blank or 0 = Public sees now.</div>
                 </div>
               </div>
 
