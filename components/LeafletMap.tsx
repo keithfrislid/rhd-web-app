@@ -6,20 +6,6 @@ import "leaflet/dist/leaflet.css"
 import { supabase } from "@/lib/supabase"
 import DealSheetPanel from "@/components/DealSheetPanel"
 import { effectiveVisibility, type Property } from "@/lib/properties"
-import { useTheme } from "@/components/ThemeProvider"
-
-const TILES = {
-  light: {
-    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-    attribution: "Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ",
-    className: "",
-  },
-  dark: {
-    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
-    attribution: "Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ",
-    className: "",
-  },
-} as const
 
 export default function LeafletMap({
   properties,
@@ -41,10 +27,6 @@ export default function LeafletMap({
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapInstanceRef = useRef<any>(null)
   const markersLayerRef = useRef<any>(null)
-  const tileLayerRef = useRef<any>(null)
-
-  const { theme } = useTheme()
-
   const [selected, setSelected] = useState<Property | null>(null)
   const [skipMarkViewedId, setSkipMarkViewedId] = useState<string | null>(null)
 
@@ -257,8 +239,9 @@ export default function LeafletMap({
 
         L.control.zoom({ position: "topright" }).addTo(map)
 
-        const tileConfig = TILES[document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark"]
-        tileLayerRef.current = L.tileLayer(tileConfig.url, { attribution: tileConfig.attribution, className: tileConfig.className }).addTo(map)
+        L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
+          attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
+        }).addTo(map)
 
         markersLayerRef.current = L.layerGroup().addTo(map)
       }
@@ -366,23 +349,7 @@ export default function LeafletMap({
     }
   }, [properties, viewedIds, viewedLoading, loading, pendingOfferIds])
 
-  // 4) Swap tile layer when theme changes
-  useEffect(() => {
-    const map = mapInstanceRef.current
-    if (!map) return
-
-    import("leaflet").then((L) => {
-      if (tileLayerRef.current) {
-        map.removeLayer(tileLayerRef.current)
-      }
-      const tileConfig = TILES[theme === "light" ? "light" : "dark"]
-      tileLayerRef.current = L.tileLayer(tileConfig.url, { attribution: tileConfig.attribution, className: tileConfig.className }).addTo(map)
-      // Bring markers on top
-      if (markersLayerRef.current) markersLayerRef.current.bringToFront()
-    })
-  }, [theme])
-
-  // 5) Remove map only on unmount
+  // 4) Remove map only on unmount
   useEffect(() => {
     return () => {
       if (mapInstanceRef.current) {
