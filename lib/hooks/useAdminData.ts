@@ -174,8 +174,7 @@ export function useAdminData({ selectedId, setSelectedId, setErrorMsg }: Params)
       const json = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(json?.error || `Request failed (${res.status})`)
 
-      const users = Array.isArray(json?.users) ? json.users : []
-      const pending = users.filter((u: any) => u?.role === "pending").length
+      const pending = Array.isArray(json?.pending) ? json.pending.length : 0
       setPendingUsersCount(pending)
     } catch (e: any) {
       setErrorMsg(e?.message ?? "Failed to load pending users.")

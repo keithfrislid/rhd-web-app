@@ -179,20 +179,45 @@ Deno.serve(async (req) => {
         return json({ buyers: data ?? [] });
       }
 
-      // Default GET -> pending users (used by Approve Users tab)
-      const { data, error } = await service
-        .from("profiles")
-        .select("user_id,email,first_name,last_name,phone,role,created_at")
-        .eq("role", "pending")
-        .order("created_at", { ascending: true });
+      // Default GET -> pending + approved users (used by Approve Users tab)
+      const [pendingResult, approvedResult] = await Promise.all([
+        service
+          .from("profiles")
+          .select("user_id,email,first_name,last_name,phone,role,created_at")
+          .eq("role", "pending")
+          .order("created_at", { ascending: true }),
+        service
+          .from("profiles")
+          .select("user_id,email,first_name,last_name,phone,role,created_at,buyer_tier,vip_rank")
+          .eq("role", "buyer")
+          .order("created_at", { ascending: true }),
+      ]);
 
-      if (error) return json({ error: error.message }, 500);
-      return json({ users: data ?? [] });
+      if (pendingResult.error) return json({ error: pendingResult.error.message }, 500);
+      if (approvedResult.error) return json({ error: approvedResult.error.message }, 500);
+
+      return json({ pending: pendingResult.data ?? [], approved: approvedResult.data ?? [] });
     }
 
-    // POST -> approve (default) OR update buyer ranking
+    // POST -> approve / deny / update buyer ranking
     if (req.method === "POST") {
       const body = await req.json().catch(() => ({}));
+      const isDeny = pathname.endsWith("/deny") || body?.action === "deny";
+
+      // POST deny -> set role to 'denied'
+      if (isDeny) {
+        const targetUserId = body?.user_id;
+        if (!targetUserId) return json({ error: "Missing body.user_id" }, 400);
+
+        const { error } = await service
+          .from("profiles")
+          .update({ role: "denied" })
+          .eq("user_id", targetUserId)
+          .eq("role", "pending");
+
+        if (error) return json({ error: error.message }, 500);
+        return json({ denied: true });
+      }
 
       // POST { action: 'update_buyer', user_id, buyer_tier, vip_rank }
       if (body?.action === "update_buyer") {

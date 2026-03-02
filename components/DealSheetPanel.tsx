@@ -14,6 +14,22 @@ import { StatusBadge } from "@/components/ui/StatusBadge"
 
 type OfferStatus = "pending" | "accepted" | "rejected" | "withdrawn"
 
+function formatCountdown(targetIso: string | null | undefined): string | null {
+  if (!targetIso) return null
+  const target = new Date(targetIso).getTime()
+  if (Number.isNaN(target)) return null
+  const diff = target - Date.now()
+  if (diff <= 0) return null
+  const totalSecs = Math.floor(diff / 1000)
+  const d = Math.floor(totalSecs / 86400)
+  const h = Math.floor((totalSecs % 86400) / 3600)
+  const m = Math.floor((totalSecs % 3600) / 60)
+  const s = totalSecs % 60
+  if (d > 0) return `${d}d ${h}h ${m}m`
+  if (h > 0) return `${h}h ${m}m ${s}s`
+  return `${m}m ${s}s`
+}
+
 type OfferRow = {
   id: string
   property_id: string
@@ -67,6 +83,30 @@ export default function DealSheetPanel({
   const [offerCount, setOfferCount] = useState<number | null>(null)
   const [userOffer, setUserOffer] = useState<OfferRow | null>(null)
   const [offerLoading, setOfferLoading] = useState(true)
+
+  // ---- Countdown timer for exclusive / VIP windows
+  const countdownTarget =
+    selected.visibility === "exclusive"
+      ? selected.vipReleaseAt
+      : selected.visibility === "vip"
+      ? selected.publicReleaseAt
+      : null
+
+  const [countdown, setCountdown] = useState<string | null>(() =>
+    formatCountdown(countdownTarget)
+  )
+
+  useEffect(() => {
+    setCountdown(formatCountdown(countdownTarget))
+    if (!countdownTarget) return
+    const id = setInterval(() => {
+      const val = formatCountdown(countdownTarget)
+      setCountdown(val)
+      if (!val) clearInterval(id)
+    }, 1000)
+    return () => clearInterval(id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [countdownTarget])
 
   // ---- Offer submit UI
   const [showOfferForm, setShowOfferForm] = useState(false)
@@ -375,6 +415,26 @@ export default function DealSheetPanel({
                 )}
               </div>
             </div>
+
+            {/* Countdown timer for First Dibs / VIP Access windows */}
+            {countdown && (
+              <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
+                {selected.visibility === "exclusive" && (
+                  <>
+                    <span className="text-purple-400">⏱</span>
+                    <span className="text-[var(--muted)]">First Dibs ends in</span>
+                    <span className="font-semibold tabular-nums text-purple-400">{countdown}</span>
+                  </>
+                )}
+                {selected.visibility === "vip" && (
+                  <>
+                    <span className="text-yellow-500">⏱</span>
+                    <span className="text-[var(--muted)]">VIP Access ends in</span>
+                    <span className="font-semibold tabular-nums text-yellow-500">{countdown}</span>
+                  </>
+                )}
+              </div>
+            )}
 
             {/* Hybrid offer signals */}
             <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
