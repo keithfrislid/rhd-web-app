@@ -6,6 +6,18 @@ import "leaflet/dist/leaflet.css"
 import { supabase } from "@/lib/supabase"
 import DealSheetPanel from "@/components/DealSheetPanel"
 import { effectiveVisibility, type Property } from "@/lib/properties"
+import { useTheme } from "@/components/ThemeProvider"
+
+const TILES = {
+  dark: {
+    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+    attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors &copy; <a href='https://carto.com/attributions'>CARTO</a>",
+  },
+  light: {
+    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
+    attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors &copy; <a href='https://carto.com/attributions'>CARTO</a>",
+  },
+} as const
 
 export default function LeafletMap({
   properties,
@@ -27,6 +39,9 @@ export default function LeafletMap({
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapInstanceRef = useRef<any>(null)
   const markersLayerRef = useRef<any>(null)
+  const tileLayerRef = useRef<any>(null)
+
+  const { theme } = useTheme()
 
   const [selected, setSelected] = useState<Property | null>(null)
   const [skipMarkViewedId, setSkipMarkViewedId] = useState<string | null>(null)
@@ -239,9 +254,8 @@ export default function LeafletMap({
 
         L.control.zoom({ position: "topright" }).addTo(map)
 
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png", {
-          attribution: "&copy; OpenStreetMap contributors &copy; CARTO",
-        }).addTo(map)
+        const tileConfig = TILES[document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark"]
+        tileLayerRef.current = L.tileLayer(tileConfig.url, { attribution: tileConfig.attribution }).addTo(map)
 
         markersLayerRef.current = L.layerGroup().addTo(map)
       }
@@ -349,7 +363,23 @@ export default function LeafletMap({
     }
   }, [properties, viewedIds, viewedLoading, loading, pendingOfferIds])
 
-  // 4) Remove map only on unmount
+  // 4) Swap tile layer when theme changes
+  useEffect(() => {
+    const map = mapInstanceRef.current
+    if (!map) return
+
+    import("leaflet").then((L) => {
+      if (tileLayerRef.current) {
+        map.removeLayer(tileLayerRef.current)
+      }
+      const tileConfig = TILES[theme === "light" ? "light" : "dark"]
+      tileLayerRef.current = L.tileLayer(tileConfig.url, { attribution: tileConfig.attribution }).addTo(map)
+      // Bring markers on top
+      if (markersLayerRef.current) markersLayerRef.current.bringToFront()
+    })
+  }, [theme])
+
+  // 5) Remove map only on unmount
   useEffect(() => {
     return () => {
       if (mapInstanceRef.current) {
