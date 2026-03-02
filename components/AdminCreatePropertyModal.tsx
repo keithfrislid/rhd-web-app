@@ -371,20 +371,6 @@ export default function AdminCreatePropertyModal({
                       className="mt-1"
                     />
                   </div>
-                  <div className="flex items-end">
-                    <label className="flex items-center gap-2 text-xs text-[var(--muted)]">
-                      <input
-                        type="checkbox"
-                        checked={autoNotify}
-                        onChange={(e) => setAutoNotify(e.target.checked)}
-                        className={cn(
-                          "h-4 w-4 rounded border border-[var(--border)] bg-[var(--surface)]",
-                          "accent-[var(--accent)]"
-                        )}
-                      />
-                      Auto notify buyers when released
-                    </label>
-                  </div>
                 </div>
               </Card>
             </div>
@@ -578,6 +564,20 @@ export default function AdminCreatePropertyModal({
                   </div>
                 </div>
               )}
+              <div className="mt-4 border-t border-[var(--border)] pt-4">
+                <label className="flex items-center gap-2 text-sm text-[var(--muted)]">
+                  <input
+                    type="checkbox"
+                    checked={autoNotify}
+                    onChange={(e) => setAutoNotify(e.target.checked)}
+                    className={cn(
+                      "h-4 w-4 rounded border border-[var(--border)] bg-[var(--surface)]",
+                      "accent-[var(--accent)]"
+                    )}
+                  />
+                  Auto notify buyers when released
+                </label>
+              </div>
             </Card>
           </div>
         )}

@@ -277,8 +277,17 @@ export default function LeafletMap({
 
       const pinColorFor = (property: Property) => {
         if (pendingOfferIds.has(property.id)) return "#3b82f6"       // blue  — pending offer
-        if (property.visibility === "exclusive")   return "#a855f7"  // purple — first dibs
-        if (property.visibility === "vip")         return "#eab308"  // gold   — VIP access
+
+        const now = Date.now()
+        const vipTime = property.vipReleaseAt ? new Date(property.vipReleaseAt).getTime() : null
+        const pubTime = property.publicReleaseAt ? new Date(property.publicReleaseAt).getTime() : null
+
+        // Still in exclusive window (before VIP release)
+        if (vipTime && now < vipTime) return "#a855f7"               // purple — first dibs
+        // In VIP window (after VIP release, before public release)
+        if (pubTime && now < pubTime) return "#eab308"               // gold   — VIP access
+
+        // Public stage: apply standard states
         if (!viewedLoading && viewedIds.has(property.id)) return "#374151" // dark — viewed
         if (property.status === "Under Contract")  return "#f59e0b"  // amber  — under contract
         return "#ef4444"                                              // red    — new
@@ -390,6 +399,16 @@ export default function LeafletMap({
       {!loading && (
         <div className="absolute bottom-6 right-3 z-[1500] pointer-events-none">
           <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/70 backdrop-blur px-3 py-1.5">
+            <span className="flex items-center gap-1.5 text-[10px] text-white/70">
+              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#a855f7]" />
+              First Dibs
+            </span>
+            <span className="h-3 w-px bg-white/15" />
+            <span className="flex items-center gap-1.5 text-[10px] text-white/70">
+              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#eab308]" />
+              VIP
+            </span>
+            <span className="h-3 w-px bg-white/15" />
             <span className="flex items-center gap-1.5 text-[10px] text-white/70">
               <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#ef4444]" />
               New

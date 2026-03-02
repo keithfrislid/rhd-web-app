@@ -591,6 +591,7 @@ export default function DealSheetPanel({
           Saved properties are tied to your account.
         </div>
       </CardContent>
+
     </Card>
   )
 }
