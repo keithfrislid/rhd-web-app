@@ -20,16 +20,16 @@ export function Badge({
   variant?: BadgeVariant
 }) {
   const base =
-    "inline-flex items-center rounded-full px-2.5 py-1 text-[11px] font-semibold leading-none"
+    "inline-flex items-center rounded-full px-2.5 py-[3px] text-[11px] font-semibold leading-none tracking-wide"
 
   const variants: Record<BadgeVariant, string> = {
-    default: "bg-white/10 text-[var(--text)]",
-    muted: "bg-white/5 text-[var(--muted)]",
-    accent: "bg-[var(--accent)]/15 text-[var(--accent)]",
-    success: "bg-[var(--success)]/15 text-[var(--success)]",
-    warning: "bg-[var(--warning)]/15 text-[var(--warning)]",
-    danger: "bg-[var(--danger)]/15 text-[var(--danger)]",
-    outline: "border border-[var(--border)] text-[var(--text)]",
+    default: "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)]",
+    muted: "bg-[var(--surface-2)] text-[var(--muted)] border border-[var(--border)]",
+    accent: "bg-[var(--accent-dim)] text-[var(--accent)] border border-[var(--accent)]/20",
+    success: "bg-[var(--success-dim)] text-[var(--success)] border border-[var(--success)]/20",
+    warning: "bg-[var(--warning-dim)] text-[var(--warning)] border border-[var(--warning)]/20",
+    danger: "bg-[var(--danger-dim)] text-[var(--danger)] border border-[var(--danger)]/20",
+    outline: "border border-[var(--border-strong)] text-[var(--muted)]",
   }
 
   return <span className={cn(base, variants[variant], className)} {...props} />

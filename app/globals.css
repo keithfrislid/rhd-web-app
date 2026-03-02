@@ -4,54 +4,75 @@
 :root {
   /*
     Design Tokens — Dark theme (default)
-    GitHub-dark inspired. Components use these variables over hardcoded colors.
+    Obsidian Premium: deep navy-black with blue-tinted surfaces
   */
 
   color-scheme: dark;
 
-  /* Surfaces */
-  --background: #0d1117;
-  --surface: #161b22;
-  --surface-2: #21262d;
+  /* Surfaces — deep navy layering */
+  --background: #06090f;
+  --surface: #0c1220;
+  --surface-2: #121b2e;
+  --surface-3: #1a2540;
 
   /* Text */
-  --text: #c9d1d9;
-  --muted: rgba(201, 209, 217, 0.72);
+  --text: #e2e8f7;
+  --muted: rgba(160, 180, 220, 0.60);
 
-  /* Borders */
-  --border: rgba(48, 54, 61, 0.85);
-  --border-strong: rgba(72, 79, 88, 0.95);
+  /* Borders — subtle blue-tinted */
+  --border: rgba(80, 110, 170, 0.18);
+  --border-strong: rgba(80, 110, 170, 0.38);
 
   /* Accent + status */
-  --accent: #2f81f7;
-  --success: #22c55e;
-  --warning: #f59e0b;
-  --danger: #ef4444;
+  --accent: #4a90f5;
+  --accent-dim: rgba(74, 144, 245, 0.15);
+  --success: #34d399;
+  --success-dim: rgba(52, 211, 153, 0.12);
+  --warning: #fbbf24;
+  --warning-dim: rgba(251, 191, 36, 0.12);
+  --danger: #f87171;
+  --danger-dim: rgba(248, 113, 113, 0.12);
 
   /* Focus ring */
-  --ring: rgba(47, 129, 247, 0.55);
+  --ring: rgba(74, 144, 245, 0.45);
+
+  /* Shadows */
+  --shadow-sm: 0 1px 4px rgba(0, 0, 0, 0.5);
+  --shadow-md: 0 4px 20px rgba(0, 0, 0, 0.55);
+  --shadow-lg: 0 8px 36px rgba(0, 0, 0, 0.65);
+  --shadow-xl: 0 20px 60px rgba(0, 0, 0, 0.75);
 }
 
-/* Light theme — applied via data-theme="light" on <html> */
+/* Light theme */
 [data-theme="light"] {
   color-scheme: light;
 
-  --background: #edf0f4;  /* soft blue-gray canvas */
-  --surface: #f4f6f9;     /* card surfaces — warm off-white, not stark */
-  --surface-2: #e8ecf1;   /* elevated/secondary surfaces */
+  --background: #f0f4f9;
+  --surface: #ffffff;
+  --surface-2: #f5f7fb;
+  --surface-3: #eaeef5;
 
-  --text: #1f2328;
-  --muted: rgba(75, 85, 99, 0.85);
+  --text: #0f172a;
+  --muted: rgba(71, 85, 105, 0.75);
 
-  --border: rgba(190, 199, 213, 0.85);
-  --border-strong: rgba(155, 167, 184, 0.95);
+  --border: rgba(148, 163, 184, 0.28);
+  --border-strong: rgba(100, 116, 139, 0.5);
 
-  --accent: #0969da;
-  --success: #1a7f37;
-  --warning: #9a6700;
-  --danger: #cf222e;
+  --accent: #2563eb;
+  --accent-dim: rgba(37, 99, 235, 0.10);
+  --success: #059669;
+  --success-dim: rgba(5, 150, 105, 0.10);
+  --warning: #d97706;
+  --warning-dim: rgba(217, 119, 6, 0.10);
+  --danger: #dc2626;
+  --danger-dim: rgba(220, 38, 38, 0.10);
 
-  --ring: rgba(9, 105, 218, 0.4);
+  --ring: rgba(37, 99, 235, 0.4);
+
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.10);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 20px 48px rgba(0, 0, 0, 0.15);
 }
 
 html,
@@ -62,16 +83,62 @@ body {
 body {
   background:
     radial-gradient(
-      1200px 700px at 50% -200px,
-      rgba(47, 129, 247, 0.10),
+      ellipse 1400px 600px at 50% -100px,
+      rgba(74, 144, 245, 0.08),
+      transparent 65%
+    ),
+    radial-gradient(
+      ellipse 800px 400px at 80% 50%,
+      rgba(74, 144, 245, 0.04),
       transparent 60%
     ),
     var(--background);
 
   color: var(--text);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 html[data-theme="light"] body {
-  background: var(--background);
+  background:
+    radial-gradient(
+      ellipse 1200px 500px at 50% -80px,
+      rgba(37, 99, 235, 0.05),
+      transparent 60%
+    ),
+    var(--background);
+}
+
+/* Leaflet popup polish */
+.leaflet-popup-content-wrapper {
+  background: var(--surface) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--border-strong) !important;
+  border-radius: 14px !important;
+  box-shadow: var(--shadow-lg) !important;
+  padding: 0 !important;
+}
+.leaflet-popup-tip {
+  background: var(--surface) !important;
+}
+.leaflet-popup-content {
+  margin: 0 !important;
+}
+
+/* Scrollbar polish */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border-strong);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted);
 }

@@ -387,76 +387,74 @@ export default function DealSheetPanel({
   const statusBadge = userOffer?.status ? statusToBadgeVariant(userOffer.status) : null
 
   return (
-    <Card className="max-h-[65vh] overflow-y-auto bg-[var(--surface)]/95 text-[var(--text)] border border-[var(--border)] shadow-2xl backdrop-blur rounded-2xl">
-      <CardHeader className="border-b border-[var(--border)] bg-[var(--surface-2)]">
+    <div className="flex flex-col max-h-[65vh] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-xl)] text-[var(--text)]">
+
+      {/* ── Header ─────────────────────────────────────────────── */}
+      <div className="flex-shrink-0 border-b border-[var(--border)] bg-[var(--surface-2)] px-5 pt-4 pb-3">
         <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <div className="text-xs tracking-wide uppercase text-[var(--muted)]">
-              Deal Sheet
+          <div className="min-w-0 flex-1">
+            {/* Label row */}
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-semibold uppercase tracking-widest text-[var(--muted)]">
+                Deal Sheet
+              </span>
+              {visEff === "exclusive" && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-purple-400/40 bg-purple-500/15 px-2 py-0.5 text-[10px] font-semibold text-purple-400">
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="3"/></svg>
+                  First Dibs
+                </span>
+              )}
+              {visEff === "vip" && (
+                <span className="inline-flex items-center gap-1 rounded-full border border-yellow-400/40 bg-yellow-500/15 px-2 py-0.5 text-[10px] font-semibold text-yellow-400">
+                  <svg width="8" height="8" viewBox="0 0 8 8" fill="currentColor"><circle cx="4" cy="4" r="3"/></svg>
+                  VIP Access
+                </span>
+              )}
+              {selected.status === "New" && !isViewed && visEff === "public" && (
+                <StatusBadge kind="new" />
+              )}
             </div>
 
-            <div className="mt-1 flex items-start justify-between gap-2">
-              <div className="text-base font-semibold leading-snug break-words">
-                {selected.address}
-              </div>
-
-              <div className="flex shrink-0 items-center gap-1.5">
-                {visEff === "exclusive" && (
-                  <span className="inline-flex items-center rounded-full border border-purple-400/40 bg-purple-500/15 px-2 py-0.5 text-[10px] font-semibold text-purple-500">
-                    First Dibs
-                  </span>
-                )}
-                {visEff === "vip" && (
-                  <span className="inline-flex items-center rounded-full border border-yellow-400/40 bg-yellow-500/15 px-2 py-0.5 text-[10px] font-semibold text-yellow-600 dark:text-yellow-400">
-                    VIP Access
-                  </span>
-                )}
-                {selected.status === "New" && !isViewed && visEff === "public" && (
-                  <StatusBadge kind="new" />
-                )}
-              </div>
+            {/* Address */}
+            <div className="mt-1.5 text-[15px] font-semibold leading-snug">
+              {selected.address}
             </div>
 
-            {/* Countdown timer for First Dibs / VIP Access windows */}
+            {/* Countdown */}
             {countdown && (
-              <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
-                {visEff === "exclusive" && (
-                  <>
-                    <span className="text-purple-400">⏱</span>
-                    <span className="text-[var(--muted)]">First Dibs ends in</span>
-                    <span className="font-semibold tabular-nums text-purple-400">{countdown}</span>
-                  </>
-                )}
-                {visEff === "vip" && (
-                  <>
-                    <span className="text-yellow-500">⏱</span>
-                    <span className="text-[var(--muted)]">VIP Access ends in</span>
-                    <span className="font-semibold tabular-nums text-yellow-500">{countdown}</span>
-                  </>
-                )}
+              <div className={cn(
+                "mt-1.5 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[11px] font-medium",
+                visEff === "exclusive"
+                  ? "border-purple-400/25 bg-purple-500/10 text-purple-400"
+                  : "border-yellow-400/25 bg-yellow-500/10 text-yellow-400"
+              )}>
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span className="text-[var(--muted)]">
+                  {visEff === "exclusive" ? "First Dibs ends in" : "VIP Access ends in"}
+                </span>
+                <span className="tabular-nums font-semibold">{countdown}</span>
               </div>
             )}
 
-            {/* Hybrid offer signals */}
-            <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-[var(--muted)]">
+            {/* Meta signals */}
+            <div className="mt-2 flex flex-wrap items-center gap-1.5">
               {deadlineLabel && (
-                <Badge variant="outline" className="text-[11px] font-semibold">
-                  Deadline: <span className="ml-1 text-[var(--text)]">{deadlineLabel}</span>
-                </Badge>
+                <span className="inline-flex items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[11px] text-[var(--muted)]">
+                  Deadline: <span className="ml-1 font-medium text-[var(--text)]">{deadlineLabel}</span>
+                </span>
               )}
-
-              <Badge variant="outline" className="text-[11px] font-semibold">
-                {offerLoading ? "Offers: …" : `Offers: ${offerCount ?? 0}`}
-              </Badge>
-
+              <span className="inline-flex items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[11px] text-[var(--muted)]">
+                {offerLoading ? "Offers: …" : `${offerCount ?? 0} offer${offerCount === 1 ? "" : "s"}`}
+              </span>
               {userOffer?.status === "pending" && <StatusBadge kind="offer_pending" />}
               {userOffer?.status === "accepted" && <StatusBadge kind="offer_accepted" />}
               {userOffer?.status === "rejected" && <StatusBadge kind="offer_rejected" />}
-
               {isViewed && onMarkNew && (
                 <button
                   onClick={onMarkNew}
-                  className="inline-flex items-center rounded-full border border-[var(--border)] px-2 py-0.5 text-[10px] font-medium text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-colors cursor-pointer"
+                  className="inline-flex items-center rounded-md border border-[var(--border)] bg-[var(--surface)] px-2 py-0.5 text-[11px] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-colors"
                 >
                   Mark New
                 </button>
@@ -464,60 +462,80 @@ export default function DealSheetPanel({
             </div>
           </div>
 
-          <Button variant="secondary" size="sm" onClick={onClose}>
-            Close
-          </Button>
+          <button
+            onClick={onClose}
+            className="flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-colors"
+            aria-label="Close"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+              <path d="M1 1l10 10M11 1L1 11"/>
+            </svg>
+          </button>
         </div>
-      </CardHeader>
+      </div>
 
-      <CardContent className="p-5">
-        {/* Quick stats */}
+      {/* ── Scrollable body ─────────────────────────────────────── */}
+      <div className="flex-1 overflow-y-auto p-5 space-y-3">
+
+        {/* Hero price + property facts */}
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
-            <div className="text-xs text-[var(--muted)]">Price</div>
-            <div className="mt-1 text-lg font-semibold">{formatMoney(selected.price)}</div>
+            <div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">Asking Price</div>
+            <div className="mt-1.5 text-xl font-bold tracking-tight">{formatMoney(selected.price)}</div>
           </div>
 
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
-            <div className="text-xs text-[var(--muted)]">Property</div>
-            <div className="mt-1 font-semibold">
-              {selected.beds} bd • {selected.baths} ba
+            <div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">Property</div>
+            <div className="mt-1.5 text-sm font-semibold">
+              {selected.beds} bd &middot; {selected.baths} ba
             </div>
-            <div className="text-sm text-[var(--muted)]">
-              {selected.sqft.toLocaleString()} sqft • {selected.acres} acres
+            <div className="mt-0.5 text-[12px] text-[var(--muted)]">
+              {selected.sqft.toLocaleString()} sqft &middot; {selected.acres} ac
             </div>
           </div>
         </div>
 
         {/* Investor metrics */}
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2">
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
-            <div className="text-xs text-[var(--muted)]">ARV</div>
-            <div className="mt-1 font-semibold">{formatMoney(selected.arv)}</div>
+            <div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">ARV</div>
+            <div className="mt-1.5 text-sm font-semibold">{formatMoney(selected.arv)}</div>
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
-            <div className="text-xs text-[var(--muted)]">Repairs</div>
-            <div className="mt-1 font-semibold">{formatMoney(selected.repairs)}</div>
+            <div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">Repairs</div>
+            <div className="mt-1.5 text-sm font-semibold">{formatMoney(selected.repairs)}</div>
           </div>
           <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-3">
-            <div className="text-xs text-[var(--muted)]">Spread</div>
-            <div className="mt-1 font-semibold">{formatMoney(spread)}</div>
+            <div className="text-[9px] font-semibold uppercase tracking-widest text-[var(--muted)]">Spread</div>
+            <div className={cn(
+              "mt-1.5 text-sm font-bold",
+              spread >= 0 ? "text-[var(--success)]" : "text-[var(--danger)]"
+            )}>
+              {formatMoney(spread)}
+            </div>
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="mt-4 grid grid-cols-3 gap-2">
-          <a
-            href={(selected as any).photoUrl}
-            target="_blank"
-            rel="noreferrer"
-            className={cn(
-              "col-span-1 inline-flex items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-2 text-sm font-semibold",
-              "hover:bg-[var(--surface)]"
-            )}
-          >
-            Photos
-          </a>
+        {/* Action buttons */}
+        <div className="grid grid-cols-3 gap-2">
+          {selected.photoUrl ? (
+            <a
+              href={selected.photoUrl}
+              target="_blank"
+              rel="noreferrer"
+              className="col-span-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-2.5 text-[12px] font-medium text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--border-strong)] transition-colors"
+            >
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/>
+                <polyline points="21 15 16 10 5 21"/>
+              </svg>
+              Photos
+            </a>
+          ) : (
+            <div className="col-span-1 inline-flex items-center justify-center rounded-xl border border-[var(--border)] bg-[var(--surface-2)] py-2.5 text-[12px] text-[var(--muted)] opacity-40 cursor-not-allowed">
+              Photos
+            </div>
+          )}
 
           <Button
             onClick={() => {
@@ -525,134 +543,119 @@ export default function DealSheetPanel({
               setShowOfferForm((v) => !v)
             }}
             disabled={offersClosed || !!userOffer}
-            variant={offersClosed || !!userOffer ? "secondary" : "primary"}
-            className={cn("col-span-2", offersClosed || !!userOffer ? "opacity-70" : "")}
-            title={
-              offersClosed
-                ? "Offers are closed"
-                : userOffer
-                ? "You already submitted an offer"
-                : "Submit an offer"
-            }
+            variant={!offersClosed && !userOffer ? "primary" : "secondary"}
+            className="col-span-2"
           >
-            {offersClosed ? "Offers Closed" : userOffer ? "Offer Submitted" : "Submit Offer"}
+            {offersClosed ? "Offers Closed" : userOffer ? "Offer Submitted" : "Make an Offer"}
           </Button>
         </div>
 
-        {/* Offer form (simple v1) */}
+        {/* Offer form */}
         {showOfferForm && !offersClosed && !userOffer && (
-          <div className="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
-            <div className="text-sm font-semibold">Submit Offer</div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+            <div className="text-[13px] font-semibold">Submit Your Offer</div>
+            <p className="mt-0.5 text-[11px] text-[var(--muted)]">Offers are private — only you and the admin can see your offer details.</p>
 
-            <div className="mt-3 grid grid-cols-1 gap-2">
-              <label className="text-xs text-[var(--muted)]">Offer Price</label>
-              <Input
-                value={offerPrice}
-                onChange={(e) => setOfferPrice(e.target.value)}
-                placeholder="$250,000"
-                inputMode="decimal"
-                className="h-10"
-              />
+            <div className="mt-3 space-y-2">
+              <div>
+                <label className="block text-[11px] font-medium text-[var(--muted)] mb-1">Offer Price</label>
+                <Input
+                  value={offerPrice}
+                  onChange={(e) => setOfferPrice(e.target.value)}
+                  placeholder="$250,000"
+                  inputMode="decimal"
+                />
+              </div>
 
-              <label className="mt-2 text-xs text-[var(--muted)]">Notes (optional)</label>
-              <textarea
-                value={offerNotes}
-                onChange={(e) => setOfferNotes(e.target.value)}
-                placeholder="Any quick context (closing flexibility, etc.)"
-                rows={3}
-                className={cn(
-                  "w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-sm outline-none",
-                  "focus:border-white/30"
-                )}
-              />
+              <div>
+                <label className="block text-[11px] font-medium text-[var(--muted)] mb-1">Notes <span className="opacity-60">(optional)</span></label>
+                <textarea
+                  value={offerNotes}
+                  onChange={(e) => setOfferNotes(e.target.value)}
+                  placeholder="Closing flexibility, financing, etc."
+                  rows={3}
+                  className="w-full rounded-lg border border-[var(--border)] bg-[var(--surface)] px-3 py-2 text-[13px] text-[var(--text)] placeholder:text-[var(--muted)] outline-none resize-none focus:border-[var(--accent)]/50 transition-colors"
+                />
+              </div>
             </div>
 
-            {offerError && <div className="mt-3 text-xs text-[var(--danger)]">{offerError}</div>}
+            {offerError && (
+              <div className="mt-2 text-[11px] text-[var(--danger)]">{offerError}</div>
+            )}
 
             <div className="mt-3 flex gap-2">
-              <Button
-                onClick={() => setShowOfferForm(false)}
-                variant="secondary"
-                className="flex-1"
-              >
+              <Button onClick={() => setShowOfferForm(false)} variant="ghost" size="sm" className="flex-1">
                 Cancel
               </Button>
-              <Button
-                onClick={submitOffer}
-                disabled={submittingOffer}
-                variant="primary"
-                className={cn("flex-1", submittingOffer ? "opacity-70" : "")}
-              >
-                {submittingOffer ? "Submitting…" : "Submit"}
+              <Button onClick={submitOffer} disabled={submittingOffer} variant="primary" size="sm" className="flex-1">
+                {submittingOffer ? "Submitting…" : "Submit Offer"}
               </Button>
-            </div>
-
-            <div className="mt-2 text-[11px] text-[var(--muted)]">
-              Offers are private. You will only see the total offer count.
             </div>
           </div>
         )}
 
-        {/* If user already has an offer, show it simply */}
+        {/* User's existing offer */}
         {!offerLoading && userOffer && (
-          <div className="mt-3 rounded-2xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
             <div className="flex items-center justify-between gap-2">
-              <div className="text-sm font-semibold">Your Offer</div>
+              <div className="text-[13px] font-semibold">Your Offer</div>
               {statusBadge && <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>}
             </div>
 
-            <div className="mt-2 text-lg font-semibold">{formatMoney(userOffer.offer_price)}</div>
+            <div className="mt-2 text-xl font-bold tracking-tight">{formatMoney(userOffer.offer_price)}</div>
 
             {userOffer.notes && (
-              <div className="mt-1 text-sm text-[var(--muted)] whitespace-pre-wrap">
+              <div className="mt-1.5 text-[12px] text-[var(--muted)] whitespace-pre-wrap leading-relaxed">
                 {userOffer.notes}
               </div>
             )}
 
             {userOffer.status === "pending" && (
-              <div className="mt-3">
+              <>
                 <Button
                   onClick={withdrawOffer}
                   disabled={submittingOffer}
-                  variant="secondary"
-                  className={cn("w-full", submittingOffer ? "opacity-70" : "")}
+                  variant="ghost"
+                  size="sm"
+                  className="mt-3 w-full text-[var(--danger)] hover:text-[var(--danger)] hover:bg-[var(--danger)]/10"
                 >
                   {submittingOffer ? "Withdrawing…" : "Withdraw Offer"}
                 </Button>
-
                 {offerError && (
-                  <div className="mt-2 text-xs text-[var(--danger)]">{offerError}</div>
+                  <div className="mt-1.5 text-[11px] text-[var(--danger)]">{offerError}</div>
                 )}
-              </div>
+              </>
             )}
           </div>
         )}
 
-        {/* Save button */}
-        <div className="mt-3">
-          <Button
-            onClick={toggleSave}
-            disabled={checking || saving}
-            variant={isSaved ? "secondary" : "secondary"}
-            className={cn("w-full", checking || saving ? "opacity-70" : "")}
+        {/* Save / unsave */}
+        <button
+          onClick={toggleSave}
+          disabled={checking || saving}
+          className={cn(
+            "w-full flex items-center justify-center gap-2 rounded-xl border py-2.5 text-[13px] font-medium transition-all",
+            isSaved
+              ? "border-[var(--accent)]/40 bg-[var(--accent)]/10 text-[var(--accent)]"
+              : "border-[var(--border)] bg-[var(--surface-2)] text-[var(--muted)] hover:text-[var(--text)] hover:border-[var(--border-strong)]",
+            (checking || saving) ? "opacity-50 cursor-not-allowed" : ""
+          )}
+        >
+          <svg
+            width="14" height="14"
+            viewBox="0 0 24 24"
+            fill={isSaved ? "currentColor" : "none"}
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           >
-            {checking
-              ? "Checking…"
-              : saving
-              ? isSaved
-                ? "Unsaving…"
-                : "Saving…"
-              : isSaved
-              ? "Saved"
-              : "Save"}
-          </Button>
-        </div>
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+          {checking ? "Checking…" : saving ? (isSaved ? "Unsaving…" : "Saving…") : isSaved ? "Saved" : "Save Property"}
+        </button>
 
-        <div className="mt-3 text-xs text-[var(--muted)]">
-          Saved properties are tied to your account.
-        </div>
-      </CardContent>
-
-    </Card>
+      </div>
+    </div>
   )
 }

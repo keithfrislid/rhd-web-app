@@ -27,7 +27,6 @@ export default function LeafletMap({
   const containerRef = useRef<HTMLDivElement | null>(null)
   const mapInstanceRef = useRef<any>(null)
   const markersLayerRef = useRef<any>(null)
-
   const [selected, setSelected] = useState<Property | null>(null)
   const [skipMarkViewedId, setSkipMarkViewedId] = useState<string | null>(null)
 
@@ -227,6 +226,7 @@ export default function LeafletMap({
               font-size: 10px;
               color: rgba(255,255,255,0.58);
             }
+
           `
           document.head.appendChild(style)
         }
