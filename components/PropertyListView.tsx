@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import DealSheetPanel from "@/components/DealSheetPanel"
-import { formatMoney, type Property } from "@/lib/properties"
+import { effectiveVisibility, formatMoney, type Property } from "@/lib/properties"
 import { supabase } from "@/lib/supabase"
 import { cn } from "@/lib/cn"
 
@@ -17,6 +17,22 @@ type FilterMode = "all" | "saved" | "pending"
 
 function calcSpread(p: Property) {
   return p.arv - p.price - p.repairs
+}
+
+function formatCountdown(targetIso: string | null | undefined): string | null {
+  if (!targetIso) return null
+  const target = new Date(targetIso).getTime()
+  if (Number.isNaN(target)) return null
+  const diff = target - Date.now()
+  if (diff <= 0) return null
+  const totalSecs = Math.floor(diff / 1000)
+  const d = Math.floor(totalSecs / 86400)
+  const h = Math.floor((totalSecs % 86400) / 3600)
+  const m = Math.floor((totalSecs % 3600) / 60)
+  const s = totalSecs % 60
+  if (d > 0) return `${d}d ${h}h ${m}m`
+  if (h > 0) return `${h}h ${m}m ${s}s`
+  return `${m}m ${s}s`
 }
 
 export default function PropertyListView({
@@ -46,6 +62,17 @@ export default function PropertyListView({
 
   const [acceptedOfferIds, setAcceptedOfferIds] = useState<Set<string>>(new Set())
   const [acceptedLoading, setAcceptedLoading] = useState(true)
+
+  // Tick every second to drive countdown timers for exclusive/VIP properties
+  const [, setTick] = useState(0)
+  useEffect(() => {
+    const hasTimedProps = propertiesRaw.some(
+      (p) => p.visibility === "exclusive" || p.visibility === "vip"
+    )
+    if (!hasTimedProps) return
+    const id = setInterval(() => setTick((t) => t + 1), 1000)
+    return () => clearInterval(id)
+  }, [propertiesRaw])
 
   // Load saved property ids for this user
   const loadSavedIds = async () => {
@@ -318,7 +345,21 @@ export default function PropertyListView({
                 const isPending = pendingOfferIds.has(p.id)
                 const isAccepted = acceptedOfferIds.has(p.id)
 
-                const showNew = p.status === "New" && !viewedLoading && !viewedIds.has(p.id)
+                const visEff = effectiveVisibility(p)
+
+                const showNew =
+                  p.status === "New" &&
+                  !viewedLoading &&
+                  !viewedIds.has(p.id) &&
+                  visEff === "public"
+
+                const countdownTarget =
+                  visEff === "exclusive"
+                    ? p.vipReleaseAt
+                    : visEff === "vip"
+                    ? p.publicReleaseAt
+                    : null
+                const countdown = formatCountdown(countdownTarget)
 
                 return (
                   <button
@@ -338,6 +379,18 @@ export default function PropertyListView({
                             {p.address}
                           </div>
 
+                          {visEff === "exclusive" && (
+                            <span className="inline-flex shrink-0 items-center rounded-full border border-purple-400/40 bg-purple-500/15 px-2 py-0.5 text-[10px] font-semibold text-purple-400">
+                              First Dibs
+                            </span>
+                          )}
+
+                          {visEff === "vip" && (
+                            <span className="inline-flex shrink-0 items-center rounded-full border border-yellow-400/40 bg-yellow-500/15 px-2 py-0.5 text-[10px] font-semibold text-yellow-500">
+                              VIP Access
+                            </span>
+                          )}
+
                           {showNew && <StatusBadge kind="new" className="shrink-0" />}
 
                           {isSaved && <StatusBadge kind="saved" className="shrink-0" />}
@@ -355,6 +408,18 @@ export default function PropertyListView({
                           {p.beds} bd • {p.baths} ba • {p.sqft.toLocaleString()} sqft •{" "}
                           {p.acres} ac
                         </div>
+
+                        {countdown && (
+                          <div className="mt-0.5 flex items-center gap-1 text-[11px]">
+                            <span className={visEff === "exclusive" ? "text-purple-400" : "text-yellow-500"}>⏱</span>
+                            <span className="text-[var(--muted)]">
+                              {visEff === "exclusive" ? "First Dibs" : "VIP Access"} ends in
+                            </span>
+                            <span className={`font-semibold tabular-nums ${visEff === "exclusive" ? "text-purple-400" : "text-yellow-500"}`}>
+                              {countdown}
+                            </span>
+                          </div>
+                        )}
                       </div>
 
                       <div className="shrink-0 text-right">

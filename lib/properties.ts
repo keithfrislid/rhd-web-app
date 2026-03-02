@@ -39,6 +39,39 @@ export function formatMoney(n: number) {
   return `$${n.toLocaleString()}`
 }
 
+/**
+ * Returns the property's "effective" visibility based on whether its
+ * release timestamps have already passed. The DB field may still say
+ * "exclusive" or "vip" even after the window expired, so we derive the
+ * real current state here on the client.
+ *
+ *   exclusive → if vipReleaseAt has passed, promote to vip (or public if both passed)
+ *   vip       → if publicReleaseAt has passed, promote to public
+ */
+export function effectiveVisibility(p: Pick<Property, "visibility" | "vipReleaseAt" | "publicReleaseAt">): PropertyVisibility {
+  const now = Date.now()
+  const vis = p.visibility ?? "public"
+
+  if (vis === "exclusive") {
+    const vipTime = p.vipReleaseAt ? new Date(p.vipReleaseAt).getTime() : null
+    const pubTime = p.publicReleaseAt ? new Date(p.publicReleaseAt).getTime() : null
+    if (vipTime && now >= vipTime) {
+      // exclusive window over — check if VIP window also over
+      if (pubTime && now >= pubTime) return "public"
+      return "vip"
+    }
+    return "exclusive"
+  }
+
+  if (vis === "vip") {
+    const pubTime = p.publicReleaseAt ? new Date(p.publicReleaseAt).getTime() : null
+    if (pubTime && now >= pubTime) return "public"
+    return "vip"
+  }
+
+  return "public"
+}
+
 export async function fetchProperties(opts?: { includeUnderContract?: boolean }): Promise<Property[]> {
   const includeUnderContract = !!opts?.includeUnderContract
 

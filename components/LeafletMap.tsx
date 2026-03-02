@@ -5,7 +5,7 @@ import "leaflet/dist/leaflet.css"
 
 import { supabase } from "@/lib/supabase"
 import DealSheetPanel from "@/components/DealSheetPanel"
-import { type Property } from "@/lib/properties"
+import { effectiveVisibility, type Property } from "@/lib/properties"
 
 export default function LeafletMap({
   properties,
@@ -276,16 +276,11 @@ export default function LeafletMap({
       if (!properties || properties.length === 0) return
 
       const pinColorFor = (property: Property) => {
-        if (pendingOfferIds.has(property.id)) return "#3b82f6"       // blue  — pending offer
+        if (pendingOfferIds.has(property.id)) return "#3b82f6"       // blue   — pending offer
 
-        const now = Date.now()
-        const vipTime = property.vipReleaseAt ? new Date(property.vipReleaseAt).getTime() : null
-        const pubTime = property.publicReleaseAt ? new Date(property.publicReleaseAt).getTime() : null
-
-        // Still in exclusive window (before VIP release)
-        if (vipTime && now < vipTime) return "#a855f7"               // purple — first dibs
-        // In VIP window (after VIP release, before public release)
-        if (pubTime && now < pubTime) return "#eab308"               // gold   — VIP access
+        const vis = effectiveVisibility(property)
+        if (vis === "exclusive") return "#a855f7"                     // purple — first dibs
+        if (vis === "vip")       return "#eab308"                     // gold   — VIP access
 
         // Public stage: apply standard states
         if (!viewedLoading && viewedIds.has(property.id)) return "#374151" // dark — viewed

@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react"
 import type { Property } from "@/lib/properties"
-import { formatMoney } from "@/lib/properties"
+import { effectiveVisibility, formatMoney } from "@/lib/properties"
 import { supabase } from "@/lib/supabase"
 
 import { Card, CardContent, CardHeader } from "@/components/ui/Card"
@@ -73,6 +73,7 @@ export default function DealSheetPanel({
   onMarkNew?: () => void
 }) {
   const spread = selected.arv - selected.price - selected.repairs
+  const visEff = effectiveVisibility(selected)
 
   // ---- Saved state (existing feature)
   const [isSaved, setIsSaved] = useState(false)
@@ -86,9 +87,9 @@ export default function DealSheetPanel({
 
   // ---- Countdown timer for exclusive / VIP windows
   const countdownTarget =
-    selected.visibility === "exclusive"
+    visEff === "exclusive"
       ? selected.vipReleaseAt
-      : selected.visibility === "vip"
+      : visEff === "vip"
       ? selected.publicReleaseAt
       : null
 
@@ -400,17 +401,17 @@ export default function DealSheetPanel({
               </div>
 
               <div className="flex shrink-0 items-center gap-1.5">
-                {selected.visibility === "exclusive" && (
+                {visEff === "exclusive" && (
                   <span className="inline-flex items-center rounded-full border border-purple-400/40 bg-purple-500/15 px-2 py-0.5 text-[10px] font-semibold text-purple-500">
                     First Dibs
                   </span>
                 )}
-                {selected.visibility === "vip" && (
+                {visEff === "vip" && (
                   <span className="inline-flex items-center rounded-full border border-yellow-400/40 bg-yellow-500/15 px-2 py-0.5 text-[10px] font-semibold text-yellow-600 dark:text-yellow-400">
                     VIP Access
                   </span>
                 )}
-                {selected.status === "New" && !isViewed && selected.visibility === "public" && (
+                {selected.status === "New" && !isViewed && visEff === "public" && (
                   <StatusBadge kind="new" />
                 )}
               </div>
@@ -419,14 +420,14 @@ export default function DealSheetPanel({
             {/* Countdown timer for First Dibs / VIP Access windows */}
             {countdown && (
               <div className="mt-1.5 flex items-center gap-1.5 text-[11px]">
-                {selected.visibility === "exclusive" && (
+                {visEff === "exclusive" && (
                   <>
                     <span className="text-purple-400">⏱</span>
                     <span className="text-[var(--muted)]">First Dibs ends in</span>
                     <span className="font-semibold tabular-nums text-purple-400">{countdown}</span>
                   </>
                 )}
-                {selected.visibility === "vip" && (
+                {visEff === "vip" && (
                   <>
                     <span className="text-yellow-500">⏱</span>
                     <span className="text-[var(--muted)]">VIP Access ends in</span>
