@@ -8,15 +8,17 @@ import DealSheetPanel from "@/components/DealSheetPanel"
 import { effectiveVisibility, type Property } from "@/lib/properties"
 import { useTheme } from "@/components/ThemeProvider"
 
+// Both themes use the familiar OSM standard tile (Google Maps / Redfin style —
+// green parks, blue water, white roads). Dark mode applies a CSS filter to dim
+// the tiles to a "dusk" feel without losing the familiar color palette.
+const OSM_TILE = {
+  url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
+}
+
 const TILES = {
-  dark: {
-    url: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-    attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors &copy; <a href='https://carto.com/attributions'>CARTO</a>",
-  },
-  light: {
-    url: "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png",
-    attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors &copy; <a href='https://carto.com/attributions'>CARTO</a>",
-  },
+  dark:  { ...OSM_TILE, className: "rhd-tiles-dark" },
+  light: { ...OSM_TILE, className: "rhd-tiles-light" },
 } as const
 
 export default function LeafletMap({
@@ -242,6 +244,14 @@ export default function LeafletMap({
               font-size: 10px;
               color: rgba(255,255,255,0.58);
             }
+
+            /* Tile theme filters */
+            .rhd-tiles-dark {
+              filter: brightness(0.58) saturate(0.75) contrast(1.05);
+            }
+            .rhd-tiles-light {
+              filter: brightness(1.0) saturate(0.9);
+            }
           `
           document.head.appendChild(style)
         }
@@ -255,7 +265,7 @@ export default function LeafletMap({
         L.control.zoom({ position: "topright" }).addTo(map)
 
         const tileConfig = TILES[document.documentElement.getAttribute("data-theme") === "light" ? "light" : "dark"]
-        tileLayerRef.current = L.tileLayer(tileConfig.url, { attribution: tileConfig.attribution }).addTo(map)
+        tileLayerRef.current = L.tileLayer(tileConfig.url, { attribution: tileConfig.attribution, className: tileConfig.className }).addTo(map)
 
         markersLayerRef.current = L.layerGroup().addTo(map)
       }
@@ -373,7 +383,7 @@ export default function LeafletMap({
         map.removeLayer(tileLayerRef.current)
       }
       const tileConfig = TILES[theme === "light" ? "light" : "dark"]
-      tileLayerRef.current = L.tileLayer(tileConfig.url, { attribution: tileConfig.attribution }).addTo(map)
+      tileLayerRef.current = L.tileLayer(tileConfig.url, { attribution: tileConfig.attribution, className: tileConfig.className }).addTo(map)
       // Bring markers on top
       if (markersLayerRef.current) markersLayerRef.current.bringToFront()
     })
