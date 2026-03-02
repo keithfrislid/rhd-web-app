@@ -8,17 +8,17 @@ import DealSheetPanel from "@/components/DealSheetPanel"
 import { effectiveVisibility, type Property } from "@/lib/properties"
 import { useTheme } from "@/components/ThemeProvider"
 
-// Both themes use the familiar OSM standard tile (Google Maps / Redfin style —
-// green parks, blue water, white roads). Dark mode applies a CSS filter to dim
-// the tiles to a "dusk" feel without losing the familiar color palette.
-const OSM_TILE = {
-  url: "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  attribution: "&copy; <a href='https://www.openstreetmap.org/copyright'>OpenStreetMap</a> contributors",
-}
-
 const TILES = {
-  dark:  { ...OSM_TILE, className: "rhd-tiles-dark" },
-  light: { ...OSM_TILE, className: "rhd-tiles-light" },
+  light: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    attribution: "Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ",
+    className: "",
+  },
+  dark: {
+    url: "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+    attribution: "Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ",
+    className: "",
+  },
 } as const
 
 export default function LeafletMap({
@@ -245,13 +245,6 @@ export default function LeafletMap({
               color: rgba(255,255,255,0.58);
             }
 
-            /* Tile theme filters */
-            .rhd-tiles-dark {
-              filter: brightness(0.58) saturate(0.75) contrast(1.05);
-            }
-            .rhd-tiles-light {
-              filter: brightness(1.0) saturate(0.9);
-            }
           `
           document.head.appendChild(style)
         }
