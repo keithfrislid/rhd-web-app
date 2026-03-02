@@ -10,23 +10,23 @@ export type ButtonProps = React.ButtonHTMLAttributes<HTMLButtonElement> & {
 }
 
 const base =
-  "inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--background)]"
+  "inline-flex items-center justify-center gap-2 rounded-lg font-medium tracking-[-0.01em] transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ring)] focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--background)] select-none"
 
 const variants: Record<Variant, string> = {
   primary:
-    "bg-[var(--accent)] text-white hover:brightness-110 border border-transparent",
+    "bg-[var(--accent)] text-white shadow-[0_1px_3px_rgba(0,0,0,0.35)] hover:brightness-110 active:brightness-95 border border-transparent",
   secondary:
-    "bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--border-strong)]",
+    "bg-[var(--surface-2)] text-[var(--text)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--surface-3,var(--surface-2))] active:brightness-95",
   ghost:
-    "bg-transparent text-[var(--text)] hover:bg-[var(--surface)] border border-transparent",
+    "bg-transparent text-[var(--muted)] hover:text-[var(--text)] hover:bg-[var(--surface-2)] border border-transparent active:brightness-95",
   danger:
-    "bg-[var(--danger)] text-white hover:brightness-110 border border-transparent",
+    "bg-[var(--danger)] text-white shadow-[0_1px_3px_rgba(0,0,0,0.35)] hover:brightness-110 active:brightness-95 border border-transparent",
 }
 
 const sizes: Record<Size, string> = {
-  sm: "h-9 px-3 text-sm",
-  md: "h-10 px-4 text-sm",
-  lg: "h-11 px-5 text-base",
+  sm: "h-8 px-3 text-[12px]",
+  md: "h-9 px-4 text-[13px]",
+  lg: "h-10 px-5 text-sm",
 }
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(

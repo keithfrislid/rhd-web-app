@@ -236,107 +236,77 @@ export default function PropertyListView({
   return (
     <div className="relative">
       <Card className="overflow-hidden">
-        <CardHeader className="border-b border-[var(--border)] bg-[var(--surface-2)]">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <div className="text-sm font-semibold">Properties</div>
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface-2)] px-5 py-3">
+          <div className="flex items-center gap-3">
+            <div className="text-[13px] font-semibold text-[var(--text)]">Properties</div>
+            <Badge variant="muted">{activeCountLabel}</Badge>
 
-              {onSwitchToMap && (
-                <div className="flex items-center rounded-full border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+            {onSwitchToMap && (
+              <>
+                <div className="h-4 w-px bg-[var(--border)]" />
+                <div className="flex items-center rounded-full border border-[var(--border)] bg-[var(--surface)] overflow-hidden text-[12px]">
                   <button
                     onClick={onSwitchToMap}
-                    className="px-3 py-1 text-xs font-semibold text-[var(--muted)] hover:text-[var(--text)] transition-colors"
+                    className="px-3 py-1 font-medium text-[var(--muted)] hover:text-[var(--text)] transition-colors"
                   >
                     Map
                   </button>
                   <div className="w-px h-4 bg-[var(--border)]" />
-                  <span className="px-3 py-1 text-xs font-semibold text-[var(--text)] select-none">List</span>
+                  <span className="px-3 py-1 font-semibold text-[var(--text)] select-none">List</span>
                 </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <Badge variant="muted">{activeCountLabel}</Badge>
-
-              <div className="h-4 w-px bg-[var(--border)]" />
-
-              {/* Filter */}
-              <div className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-1">
-                <Button
-                  size="sm"
-                  variant={filterMode === "all" ? "primary" : "ghost"}
-                  onClick={() => setFilterMode("all")}
-                  className="h-8 px-2"
-                >
-                  All
-                </Button>
-                <Button
-                  size="sm"
-                  variant={filterMode === "saved" ? "primary" : "ghost"}
-                  onClick={() => setFilterMode("saved")}
-                  className="h-8 px-2"
-                >
-                  Saved
-                </Button>
-                <Button
-                  size="sm"
-                  variant={filterMode === "pending" ? "primary" : "ghost"}
-                  onClick={() => setFilterMode("pending")}
-                  className="h-8 px-2"
-                >
-                  Pending
-                </Button>
-              </div>
-
-              <div className="h-4 w-px bg-[var(--border)]" />
-
-              {/* Sort */}
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-[var(--muted)]">Sort</span>
-                <Select
-                  value={sortMode}
-                  onChange={(e) => setSortMode(e.target.value as SortMode)}
-                  className="h-9 w-[190px] px-2 text-xs"
-                >
-                  <option value="newest">Newest</option>
-                  <option value="price">Price (low → high)</option>
-                  <option value="spread">Spread (high → low)</option>
-                </Select>
-              </div>
-            </div>
+              </>
+            )}
           </div>
 
-          {(savedLoading || pendingLoading || acceptedLoading) && (
-            <div className="mt-1 text-[11px] text-[var(--muted)]">
-              Syncing{" "}
-              {savedLoading && pendingLoading
-                ? "saved + pending…"
-                : savedLoading
-                ? "saved…"
-                : pendingLoading
-                ? "pending…"
-                : "accepted…"}
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Filter pills */}
+            <div className="flex items-center gap-1 rounded-lg border border-[var(--border)] bg-[var(--surface)] p-0.5">
+              {(["all", "saved", "pending"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  onClick={() => setFilterMode(mode)}
+                  className={cn(
+                    "h-7 rounded-md px-3 text-[12px] font-medium transition-all capitalize",
+                    filterMode === mode
+                      ? "bg-[var(--accent)] text-white shadow-sm"
+                      : "text-[var(--muted)] hover:text-[var(--text)]"
+                  )}
+                >
+                  {mode}
+                </button>
+              ))}
             </div>
-          )}
-        </CardHeader>
+
+            <div className="h-4 w-px bg-[var(--border)]" />
+
+            <Select
+              value={sortMode}
+              onChange={(e) => setSortMode(e.target.value as SortMode)}
+              className="h-8 w-[175px] px-2 text-[12px]"
+            >
+              <option value="newest">Newest first</option>
+              <option value="price">Price: low → high</option>
+              <option value="spread">Spread: high → low</option>
+            </Select>
+          </div>
+        </div>
 
         <CardContent className="p-0">
-          {/* Body */}
           {loading ? (
-            <div className="p-4 text-sm text-[var(--muted)]">Loading properties…</div>
-          ) : propertiesRaw.length === 0 ? (
-            <div className="p-4 text-sm text-[var(--muted)]">
-              No properties found in Supabase.
+            <div className="flex flex-col gap-3 p-5">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-24 rounded-xl border border-[var(--border)] bg-[var(--surface-2)] animate-pulse" />
+              ))}
             </div>
+          ) : propertiesRaw.length === 0 ? (
+            <div className="p-8 text-center text-sm text-[var(--muted)]">No properties available.</div>
           ) : properties.length === 0 && filterMode === "saved" ? (
-            <div className="p-4 text-sm text-[var(--muted)]">
-              No saved properties yet. Open a deal and hit{" "}
-              <span className="font-semibold text-[var(--text)]">Save</span>.
+            <div className="p-8 text-center text-sm text-[var(--muted)]">
+              No saved properties yet — open a deal and hit <span className="font-semibold text-[var(--text)]">Save</span>.
             </div>
           ) : properties.length === 0 && filterMode === "pending" ? (
-            <div className="p-4 text-sm text-[var(--muted)]">
-              No pending offers yet. Open a deal and submit an offer.
-            </div>
+            <div className="p-8 text-center text-sm text-[var(--muted)]">No pending offers yet.</div>
           ) : (
             <div className="divide-y divide-[var(--border)]">
               {properties.map((p) => {
@@ -344,22 +314,18 @@ export default function PropertyListView({
                 const isSaved = savedIds.has(p.id)
                 const isPending = pendingOfferIds.has(p.id)
                 const isAccepted = acceptedOfferIds.has(p.id)
+                const isViewed = !viewedLoading && viewedIds.has(p.id)
 
                 const visEff = effectiveVisibility(p)
-
-                const showNew =
-                  p.status === "New" &&
-                  !viewedLoading &&
-                  !viewedIds.has(p.id) &&
-                  visEff === "public"
+                const showNew = p.status === "New" && !isViewed && visEff === "public"
 
                 const countdownTarget =
-                  visEff === "exclusive"
-                    ? p.vipReleaseAt
-                    : visEff === "vip"
-                    ? p.publicReleaseAt
-                    : null
+                  visEff === "exclusive" ? p.vipReleaseAt
+                  : visEff === "vip" ? p.publicReleaseAt
+                  : null
                 const countdown = formatCountdown(countdownTarget)
+
+                const spreadPositive = spread > 0
 
                 return (
                   <button
@@ -367,50 +333,45 @@ export default function PropertyListView({
                     type="button"
                     onClick={() => setSelected(p)}
                     className={cn(
-                      "w-full text-left px-4 py-3 transition",
-                      "hover:bg-[var(--surface-2)]"
+                      "group w-full text-left px-5 py-4 transition-colors duration-100",
+                      "hover:bg-[var(--surface-2)]",
+                      isViewed && "opacity-75"
                     )}
                   >
-                    {/* Top: Address + pills | Spread */}
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="min-w-0 truncate font-semibold leading-snug text-[var(--text)]">
+                    <div className="flex items-start justify-between gap-4">
+                      {/* Left column */}
+                      <div className="min-w-0 flex-1">
+                        {/* Address + badges row */}
+                        <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+                          <span className="min-w-0 truncate text-[13px] font-semibold leading-snug text-[var(--text)] group-hover:text-white transition-colors">
                             {p.address}
-                          </div>
+                          </span>
 
                           {visEff === "exclusive" && (
-                            <span className="inline-flex shrink-0 items-center rounded-full border border-purple-400/40 bg-purple-500/15 px-2 py-0.5 text-[10px] font-semibold text-purple-400">
+                            <span className="inline-flex shrink-0 items-center rounded-full border border-purple-400/30 bg-purple-500/12 px-2 py-0.5 text-[10px] font-semibold text-purple-400">
                               First Dibs
                             </span>
                           )}
-
                           {visEff === "vip" && (
-                            <span className="inline-flex shrink-0 items-center rounded-full border border-yellow-400/40 bg-yellow-500/15 px-2 py-0.5 text-[10px] font-semibold text-yellow-500">
+                            <span className="inline-flex shrink-0 items-center rounded-full border border-yellow-400/30 bg-yellow-500/12 px-2 py-0.5 text-[10px] font-semibold text-yellow-500">
                               VIP Access
                             </span>
                           )}
-
                           {showNew && <StatusBadge kind="new" className="shrink-0" />}
-
                           {isSaved && <StatusBadge kind="saved" className="shrink-0" />}
-
                           {isPending && <StatusBadge kind="offer_pending" className="shrink-0" />}
-
                           {isAccepted && <StatusBadge kind="offer_accepted" className="shrink-0" />}
-
-                          {p.status === "Under Contract" && (
-                            <StatusBadge kind="under_contract" className="shrink-0" />
-                          )}
+                          {p.status === "Under Contract" && <StatusBadge kind="under_contract" className="shrink-0" />}
                         </div>
 
-                        <div className="mt-0.5 text-[12px] text-[var(--muted)]">
-                          {p.beds} bd • {p.baths} ba • {p.sqft.toLocaleString()} sqft •{" "}
-                          {p.acres} ac
+                        {/* Meta */}
+                        <div className="mt-1 text-[11px] text-[var(--muted)]">
+                          {p.beds} bd · {p.baths} ba · {p.sqft.toLocaleString()} sqft · {p.acres} ac
                         </div>
 
+                        {/* Countdown */}
                         {countdown && (
-                          <div className="mt-0.5 flex items-center gap-1 text-[11px]">
+                          <div className="mt-1 flex items-center gap-1 text-[11px]">
                             <span className={visEff === "exclusive" ? "text-purple-400" : "text-yellow-500"}>⏱</span>
                             <span className="text-[var(--muted)]">
                               {visEff === "exclusive" ? "First Dibs" : "VIP Access"} ends in
@@ -420,42 +381,37 @@ export default function PropertyListView({
                             </span>
                           </div>
                         )}
+
+                        {/* Metric chips */}
+                        <div className="mt-2.5 grid grid-cols-3 gap-1.5">
+                          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5">
+                            <div className="text-[9px] font-medium uppercase tracking-wide text-[var(--muted)]">Price</div>
+                            <div className="mt-0.5 text-[12px] font-semibold text-[var(--text)]">{formatMoney(p.price)}</div>
+                          </div>
+                          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5">
+                            <div className="text-[9px] font-medium uppercase tracking-wide text-[var(--muted)]">Repairs</div>
+                            <div className="mt-0.5 text-[12px] font-semibold text-[var(--text)]">{formatMoney(p.repairs)}</div>
+                          </div>
+                          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5">
+                            <div className="text-[9px] font-medium uppercase tracking-wide text-[var(--muted)]">ARV</div>
+                            <div className="mt-0.5 text-[12px] font-semibold text-[var(--text)]">{formatMoney(p.arv)}</div>
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="shrink-0 text-right">
-                        <div className="text-[11px] text-[var(--muted)]">Spread</div>
-                        <div className="text-sm font-extrabold text-[var(--text)]">
+                      {/* Right: spread + chevron */}
+                      <div className="shrink-0 flex flex-col items-end gap-1 pt-0.5">
+                        <div className="text-[9px] font-medium uppercase tracking-wide text-[var(--muted)]">Spread</div>
+                        <div className={cn(
+                          "text-base font-bold tabular-nums",
+                          spreadPositive ? "text-[var(--success)]" : "text-[var(--danger)]"
+                        )}>
                           {formatMoney(spread)}
                         </div>
+                        <svg className="mt-1 text-[var(--muted)] group-hover:text-[var(--text)] transition-colors" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M9 18l6-6-6-6"/>
+                        </svg>
                       </div>
-                    </div>
-
-                    {/* Chips: Price / Repairs / ARV */}
-                    <div className="mt-2 grid grid-cols-3 gap-2">
-                      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5">
-                        <div className="text-[10px] text-[var(--muted)]">Price</div>
-                        <div className="text-[12px] font-semibold text-[var(--text)]">
-                          {formatMoney(p.price)}
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5">
-                        <div className="text-[10px] text-[var(--muted)]">Repairs</div>
-                        <div className="text-[12px] font-semibold text-[var(--text)]">
-                          {formatMoney(p.repairs)}
-                        </div>
-                      </div>
-
-                      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-2 py-1.5">
-                        <div className="text-[10px] text-[var(--muted)]">ARV</div>
-                        <div className="text-[12px] font-semibold text-[var(--text)]">
-                          {formatMoney(p.arv)}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-1.5 text-[10px] text-[var(--muted)]">
-                      Tap to open deal sheet →
                     </div>
                   </button>
                 )
@@ -467,7 +423,7 @@ export default function PropertyListView({
 
       {/* Deal sheet overlay */}
       {selected && (
-        <div className="fixed inset-x-0 bottom-0 md:inset-y-0 md:right-4 md:left-auto md:top-24 md:bottom-auto md:w-[420px] z-[3000] pointer-events-auto">
+        <div className="fixed inset-x-0 bottom-0 md:inset-y-0 md:right-4 md:left-auto md:top-20 md:bottom-auto md:w-[420px] z-[3000] pointer-events-auto">
           <div className="mx-3 md:mx-0">
             <DealSheetPanel
               selected={selected}
