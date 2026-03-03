@@ -5,18 +5,18 @@ import "leaflet/dist/leaflet.css"
 
 // Decorative teaser pins — real TN cities, no actual property data
 const TEASER_PINS = [
-  { lat: 36.174, lng: -86.767, color: "#ef4444", label: "Nashville" },
+  { lat: 36.174, lng: -86.767, color: "#3b82f6", label: "Nashville" },
   { lat: 35.961, lng: -83.921, color: "#ef4444", label: "Knoxville" },
-  { lat: 35.150, lng: -90.049, color: "#a855f7", label: "Memphis" },
+  { lat: 35.150, lng: -90.049, color: "#374151", label: "Memphis" },
   { lat: 35.046, lng: -85.310, color: "#ef4444", label: "Chattanooga" },
-  { lat: 36.530, lng: -87.360, color: "#a855f7", label: "Clarksville" },
-  { lat: 36.340, lng: -82.210, color: "#ef4444", label: "Johnson City" },
-  { lat: 35.614, lng: -88.815, color: "#eab308", label: "Jackson" },
+  { lat: 36.530, lng: -87.360, color: "#374151", label: "Clarksville" },
+  { lat: 36.340, lng: -82.210, color: "#3b82f6", label: "Johnson City" },
+  { lat: 35.614, lng: -88.815, color: "#ef4444", label: "Jackson" },
   { lat: 36.160, lng: -85.502, color: "#ef4444", label: "Cookeville" },
-  { lat: 35.929, lng: -84.012, color: "#a855f7", label: "Maryville" },
-  { lat: 36.523, lng: -86.885, color: "#ef4444", label: "Springfield" },
+  { lat: 35.929, lng: -84.012, color: "#374151", label: "Maryville" },
+  { lat: 36.523, lng: -86.885, color: "#374151", label: "Springfield" },
   { lat: 35.732, lng: -86.893, color: "#eab308", label: "Franklin" },
-  { lat: 35.846, lng: -86.390, color: "#ef4444", label: "Murfreesboro" },
+  { lat: 35.846, lng: -86.390, color: "#374151", label: "Murfreesboro" },
 ]
 
 function makePinSvg(color: string) {

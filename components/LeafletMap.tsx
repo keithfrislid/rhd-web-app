@@ -279,7 +279,7 @@ export default function LeafletMap({
         if (pendingOfferIds.has(property.id)) return "#3b82f6"       // blue   — pending offer
 
         const vis = effectiveVisibility(property)
-        if (vis === "exclusive") return "#7e22ce"                     // purple — first dibs
+        if (vis === "exclusive") return "#5d00d7"                    // purple — first dibs
         if (vis === "vip")       return "#eab308"                     // gold   — VIP access
 
         // Public stage: apply standard states
