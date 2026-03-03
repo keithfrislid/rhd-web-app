@@ -192,7 +192,7 @@ export default function BuyBoxPage() {
                             : "bg-[var(--surface)] text-[var(--text)] border border-[var(--border)] hover:bg-[var(--surface-2)]",
                         ].join(" ")}
                       >
-                        <span className="font-semibold">{c}</span>
+                        <span className={on ? "font-semibold text-[var(--text)]" : "font-normal text-[var(--muted)]"}>{c}</span>
                         <span className={on ? "text-[var(--text)]" : "text-[var(--muted)]"}>
                           {on ? "ON" : "OFF"}
                         </span>
