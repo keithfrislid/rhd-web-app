@@ -333,7 +333,7 @@ export default function PropertyListView({
                     type="button"
                     onClick={() => setSelected(p)}
                     className={cn(
-                      "group w-full text-left px-5 py-4 transition-colors duration-100",
+                      "group w-full text-left px-3 py-3 md:px-5 md:py-4 transition-colors duration-100",
                       "hover:bg-[var(--surface-2)]",
                       isViewed && "opacity-75"
                     )}
@@ -383,19 +383,17 @@ export default function PropertyListView({
                         )}
 
                         {/* Metric chips */}
-                        <div className="mt-2.5 grid grid-cols-3 gap-1.5">
-                          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5">
-                            <div className="text-[9px] font-medium uppercase tracking-wide text-[var(--muted)]">Price</div>
-                            <div className="mt-0.5 text-[12px] font-semibold text-[var(--text)]">{formatMoney(p.price)}</div>
-                          </div>
-                          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5">
-                            <div className="text-[9px] font-medium uppercase tracking-wide text-[var(--muted)]">Repairs</div>
-                            <div className="mt-0.5 text-[12px] font-semibold text-[var(--text)]">{formatMoney(p.repairs)}</div>
-                          </div>
-                          <div className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1.5">
-                            <div className="text-[9px] font-medium uppercase tracking-wide text-[var(--muted)]">ARV</div>
-                            <div className="mt-0.5 text-[12px] font-semibold text-[var(--text)]">{formatMoney(p.arv)}</div>
-                          </div>
+                        <div className="mt-2.5 grid grid-cols-3 gap-1">
+                          {[
+                            { label: "Price", value: formatMoney(p.price) },
+                            { label: "Repairs", value: formatMoney(p.repairs) },
+                            { label: "ARV", value: formatMoney(p.arv) },
+                          ].map(({ label, value }) => (
+                            <div key={label} className="rounded-lg border border-[var(--border)] bg-[var(--surface)] px-1.5 py-1">
+                              <div className="text-[9px] font-medium uppercase tracking-wide text-[var(--muted)]">{label}</div>
+                              <div className="mt-0.5 text-[11px] font-semibold text-[var(--text)] truncate">{value}</div>
+                            </div>
+                          ))}
                         </div>
                       </div>
 
@@ -423,18 +421,26 @@ export default function PropertyListView({
 
       {/* Deal sheet overlay */}
       {selected && (
-        <div className="fixed inset-x-0 bottom-0 md:inset-y-0 md:right-4 md:left-auto md:top-20 md:bottom-auto md:w-[420px] z-[3000] pointer-events-auto">
-          <div className="mx-3 md:mx-0">
-            <DealSheetPanel
-              selected={selected}
-              onClose={() => {
-                markViewed(selected.id)
-                setSelected(null)
-              }}
-              isViewed={viewedIds.has(selected.id)}
-            />
+        <>
+          {/* Mobile backdrop */}
+          <div
+            className="fixed inset-0 z-[2999] bg-black/50 md:hidden"
+            onClick={() => { markViewed(selected.id); setSelected(null) }}
+          />
+          {/* Panel */}
+          <div className="fixed inset-x-0 bottom-0 z-[3000] pointer-events-auto md:inset-y-0 md:right-4 md:left-auto md:top-20 md:bottom-auto md:w-[420px]">
+            <div className="mx-3 mb-3 md:mx-0 md:mb-0">
+              <DealSheetPanel
+                selected={selected}
+                onClose={() => {
+                  markViewed(selected.id)
+                  setSelected(null)
+                }}
+                isViewed={viewedIds.has(selected.id)}
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )

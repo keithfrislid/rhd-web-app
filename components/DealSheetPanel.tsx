@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import type { Property } from "@/lib/properties"
 import { effectiveVisibility, formatMoney } from "@/lib/properties"
 import { supabase } from "@/lib/supabase"
@@ -115,6 +115,17 @@ export default function DealSheetPanel({
   const [offerNotes, setOfferNotes] = useState<string>("")
   const [submittingOffer, setSubmittingOffer] = useState(false)
   const [offerError, setOfferError] = useState<string | null>(null)
+  const offerFormRef = useRef<HTMLDivElement>(null)
+  const scrollBodyRef = useRef<HTMLDivElement>(null)
+
+  // Scroll offer form into view when it opens
+  useEffect(() => {
+    if (!showOfferForm) return
+    const frame = requestAnimationFrame(() => {
+      offerFormRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+    })
+    return () => cancelAnimationFrame(frame)
+  }, [showOfferForm])
 
   const deadlineLabel = useMemo(
     () => formatDeadline((selected as any).offerDeadline),
@@ -387,7 +398,7 @@ export default function DealSheetPanel({
   const statusBadge = userOffer?.status ? statusToBadgeVariant(userOffer.status) : null
 
   return (
-    <div className="flex flex-col max-h-[65vh] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-xl)] text-[var(--text)]">
+    <div className="flex flex-col max-h-[84svh] md:max-h-[65vh] overflow-hidden rounded-2xl border border-[var(--border)] bg-[var(--surface)] shadow-[var(--shadow-xl)] text-[var(--text)]">
 
       {/* ── Header ─────────────────────────────────────────────── */}
       <div className="flex-shrink-0 border-b border-[var(--border)] bg-[var(--surface-2)] px-5 pt-4 pb-3">
@@ -475,7 +486,7 @@ export default function DealSheetPanel({
       </div>
 
       {/* ── Scrollable body ─────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto p-5 space-y-3">
+      <div ref={scrollBodyRef} className="flex-1 overflow-y-auto p-5 space-y-3">
 
         {/* Hero price + property facts */}
         <div className="grid grid-cols-2 gap-2">
@@ -552,7 +563,7 @@ export default function DealSheetPanel({
 
         {/* Offer form */}
         {showOfferForm && !offersClosed && !userOffer && (
-          <div className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
+          <div ref={offerFormRef} className="rounded-xl border border-[var(--border)] bg-[var(--surface-2)] p-4">
             <div className="text-[13px] font-semibold">Submit Your Offer</div>
             <p className="mt-0.5 text-[11px] text-[var(--muted)]">Offers are private — only you and the admin can see your offer details.</p>
 

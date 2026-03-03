@@ -363,7 +363,7 @@ export default function LeafletMap({
     <div className="relative w-full isolate">
       <div
         ref={containerRef}
-        className="w-full h-[calc(100svh-80px)] md:h-[72vh] md:min-h-[520px] min-h-[400px] rounded-xl overflow-hidden relative z-0"
+        className="w-full h-[calc(100svh-175px)] md:h-[72vh] md:min-h-[520px] min-h-[300px] rounded-xl overflow-hidden relative z-0"
       />
 
       {/* Map / List toggle — left side, below zoom controls */}
@@ -390,9 +390,9 @@ export default function LeafletMap({
         </div>
       )}
 
-      {/* Pin legend — bottom-right */}
+      {/* Pin legend — bottom-right, hidden on mobile */}
       {!loading && (
-        <div className="absolute bottom-6 right-3 z-[1500] pointer-events-none">
+        <div className="hidden sm:block absolute bottom-6 right-3 z-[1500] pointer-events-none">
           <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/70 backdrop-blur px-3 py-1.5">
             <span className="flex items-center gap-1.5 text-[10px] text-white/70">
               <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#a855f7]" />
@@ -423,25 +423,33 @@ export default function LeafletMap({
       )}
 
       {selected && (
-        <div className="absolute left-0 right-0 bottom-0 md:right-4 md:left-auto md:top-4 md:bottom-auto md:w-[400px] z-[2000] pointer-events-auto">
-          <div className="mx-3 md:mx-0">
-            <DealSheetPanel
-              selected={selected}
-              onClose={() => {
-                if (skipMarkViewedId !== selected.id) {
-                  markViewed(selected.id)
-                }
-                setSkipMarkViewedId(null)
-                setSelected(null)
-              }}
-              isViewed={viewedIds.has(selected.id)}
-              onMarkNew={() => {
-                unmarkViewed(selected.id)
-                setSkipMarkViewedId(selected.id)
-              }}
-            />
+        <>
+          {/* Mobile backdrop */}
+          <div
+            className="absolute inset-0 z-[1999] bg-black/40 md:hidden"
+            onClick={() => { markViewed(selected.id); setSkipMarkViewedId(null); setSelected(null) }}
+          />
+          {/* Panel */}
+          <div className="absolute inset-x-0 bottom-0 z-[2000] pointer-events-auto md:right-4 md:left-auto md:top-4 md:bottom-auto md:w-[400px]">
+            <div className="mx-3 mb-3 md:mx-0 md:mb-0">
+              <DealSheetPanel
+                selected={selected}
+                onClose={() => {
+                  if (skipMarkViewedId !== selected.id) {
+                    markViewed(selected.id)
+                  }
+                  setSkipMarkViewedId(null)
+                  setSelected(null)
+                }}
+                isViewed={viewedIds.has(selected.id)}
+                onMarkNew={() => {
+                  unmarkViewed(selected.id)
+                  setSkipMarkViewedId(selected.id)
+                }}
+              />
+            </div>
           </div>
-        </div>
+        </>
       )}
     </div>
   )
