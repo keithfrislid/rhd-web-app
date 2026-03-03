@@ -279,7 +279,7 @@ export default function LeafletMap({
         if (pendingOfferIds.has(property.id)) return "#3b82f6"       // blue   — pending offer
 
         const vis = effectiveVisibility(property)
-        if (vis === "exclusive") return "#a855f7"                     // purple — first dibs
+        if (vis === "exclusive") return "#7e22ce"                     // purple — first dibs
         if (vis === "vip")       return "#eab308"                     // gold   — VIP access
 
         // Public stage: apply standard states
@@ -395,7 +395,7 @@ export default function LeafletMap({
         <div className="hidden sm:block absolute bottom-6 right-3 z-[1500] pointer-events-none">
           <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/70 backdrop-blur px-3 py-1.5">
             <span className="flex items-center gap-1.5 text-[10px] text-white/70">
-              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#a855f7]" />
+              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#7e22ce]" />
               First Dibs
             </span>
             <span className="h-3 w-px bg-white/15" />
