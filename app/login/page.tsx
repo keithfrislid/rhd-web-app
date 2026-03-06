@@ -37,22 +37,18 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex flex-col md:flex-row bg-[var(--background)]">
 
-      {/* ── Left: map panel ───────────────────────────────────── */}
+      {/* Left: map panel */}
       <div className="relative hidden md:flex md:flex-1 overflow-hidden">
 
-        {/* Live map */}
         <div className="absolute inset-0">
           <LoginMap />
         </div>
 
-        {/* Gradient overlay — fades into the right panel edge */}
         <div className="absolute inset-0 bg-gradient-to-r from-[#06090f]/10 via-transparent to-[#06090f]/60 pointer-events-none" />
         <div className="absolute inset-0 bg-gradient-to-t from-[#06090f]/60 via-transparent to-transparent pointer-events-none" />
 
-        {/* Marketing copy */}
         <div className="absolute bottom-10 left-8 right-16 pointer-events-none">
 
-          {/* Logo mark */}
           <div className="flex items-center gap-2.5 mb-5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent)] shadow-lg">
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -69,7 +65,6 @@ export default function LoginPage() {
             Exclusive access to wholesale properties before they hit the open market. Approved buyers only.
           </p>
 
-          {/* Stat chips */}
           <div className="mt-5 flex flex-wrap gap-2">
             {[
               { icon: "📍", label: "Multiple Counties" },
@@ -88,10 +83,9 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* ── Right: sign-in form ────────────────────────────────── */}
+      {/* Right: sign-in form */}
       <div className="flex flex-col items-center justify-center w-full md:w-[420px] md:flex-none min-h-screen bg-[var(--background)] px-8 py-12 relative z-10">
 
-        {/* Mobile logo */}
         <div className="flex md:hidden items-center gap-2 mb-8">
           <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent)]">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -102,7 +96,6 @@ export default function LoginPage() {
         </div>
 
         <div className="w-full max-w-sm">
-          {/* Heading */}
           <div className="mb-7">
             <h1 className="text-2xl font-bold text-[var(--text)] tracking-tight">Sign in</h1>
             <p className="mt-1 text-sm text-[var(--muted)]">
@@ -117,7 +110,6 @@ export default function LoginPage() {
             </p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleLogin} className="space-y-4">
             <div>
               <label className="block text-[13px] font-medium text-[var(--text)] mb-1.5">
@@ -134,9 +126,18 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-[13px] font-medium text-[var(--text)] mb-1.5">
-                Password
-              </label>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[13px] font-medium text-[var(--text)]">
+                  Password
+                </label>
+                <button
+                  type="button"
+                  onClick={() => router.push("/forgot-password")}
+                  className="text-[12px] text-[var(--accent)] hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
               <input
                 type="password"
                 required
@@ -156,11 +157,10 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full rounded-xl bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-white hover:brightness-110 active:brightness-95 disabled:opacity-60 transition-all shadow-[0_2px_8px_rgba(74,144,245,0.35)]"
             >
-              {loading ? "Signing in…" : "Sign in"}
+              {loading ? "Signing in\u2026" : "Sign in"}
             </button>
           </form>
 
-          {/* Divider + teaser */}
           <div className="mt-8 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-4">
             <p className="text-[11px] font-semibold uppercase tracking-widest text-[var(--muted)] mb-2">
               What you get access to
