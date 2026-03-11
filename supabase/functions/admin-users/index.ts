@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (meErr) return json({ error: meErr.message }, 500);
-    if (!me || !me.is_admin) return json({ error: "Forbidden" }, 403);
+    if (!me || !(me.is_admin === true || me.role === "admin")) return json({ error: "Forbidden" }, 403);
 
     // GET -> list pending users (default) OR GET /buyers -> list buyers for rankings
     if (req.method === "GET") {

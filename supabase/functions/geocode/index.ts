@@ -61,7 +61,7 @@ Deno.serve(async (req) => {
       .maybeSingle();
 
     if (meErr) return json({ error: meErr.message }, 500);
-    if (!me || me.is_admin !== true) return json({ error: "Forbidden" }, 403);
+    if (!me || !(me.is_admin === true || me.role === "admin")) return json({ error: "Forbidden" }, 403);
 
     const body = await req.json().catch(() => ({}));
     const text = String(body?.text ?? "").trim();
