@@ -69,6 +69,7 @@ export default function AdminCreatePropertyModal({
 
   const [county, setCounty] = useState("")
   const [autoNotify, setAutoNotify] = useState(true)
+  const [dueDiligenceDate, setDueDiligenceDate] = useState("")
 
   const [lat, setLat] = useState("")
   const [lng, setLng] = useState("")
@@ -116,6 +117,7 @@ export default function AdminCreatePropertyModal({
     setRepairs("")
     setCounty("")
     setAutoNotify(true)
+    setDueDiligenceDate("")
     setLat("")
     setLng("")
     setGeocodedLabel(null)
@@ -252,6 +254,7 @@ export default function AdminCreatePropertyModal({
       vip_release_at: hoursFromNowIso(vipHours),
       public_release_at: hoursFromNowIso(publicHours),
       exclusive_user_id: visibility === "exclusive" ? exclusiveUserId : null,
+      due_diligence_date: dueDiligenceDate.trim() || null,
     })
 
     if (error) {
@@ -370,6 +373,18 @@ export default function AdminCreatePropertyModal({
                       placeholder="e.g. Knox"
                       className="mt-1"
                     />
+                  </div>
+                  <div>
+                    <label className="text-xs text-[var(--muted)]">Due Diligence Date <span className="text-[10px] text-[var(--accent)]">(admin only)</span></label>
+                    <Input
+                      type="date"
+                      value={dueDiligenceDate}
+                      onChange={(e) => setDueDiligenceDate(e.target.value)}
+                      className="mt-1"
+                    />
+                    <div className="mt-1 text-[11px] text-[var(--muted)]">
+                      Auto-archives as Closed Lost if Under Contract on this date.
+                    </div>
                   </div>
                 </div>
               </Card>

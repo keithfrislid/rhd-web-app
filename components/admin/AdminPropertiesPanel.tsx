@@ -30,6 +30,21 @@ type Props = {
   onOpen: (propertyId: string) => void
 }
 
+function dueDiligenceStatus(ddDate: string | null | undefined): {
+  label: string
+  variant: "danger" | "warning" | "default"
+} | null {
+  if (!ddDate) return null
+  const today = new Date()
+  today.setHours(0, 0, 0, 0)
+  const dd = new Date(ddDate + "T00:00:00")
+  const diffDays = Math.ceil((dd.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+  if (diffDays < 0) return { label: `DD ${Math.abs(diffDays)}d ago`, variant: "danger" }
+  if (diffDays === 0) return { label: "DD today", variant: "danger" }
+  if (diffDays <= 3) return { label: `DD in ${diffDays}d`, variant: "warning" }
+  return { label: `DD in ${diffDays}d`, variant: "default" }
+}
+
 function isUnderContract(p: PropertyRow) {
   return p.status === "Under Contract" && !p.is_archived
 }
@@ -144,6 +159,7 @@ export default function AdminPropertiesPanel({
           {filteredAndSorted.map((p) => {
             const pendingForProp = pendingCountByProperty.get(p.id) ?? 0
             const s = statusBadge(p)
+            const dd = isActive(p) ? dueDiligenceStatus(p.due_diligence_date) : null
 
             return (
               <button
@@ -171,11 +187,18 @@ export default function AdminPropertiesPanel({
                         </span>
                       </div>
 
-                      {pendingForProp > 0 && (
+                      {(pendingForProp > 0 || dd) && (
                         <div className="mt-2 flex flex-wrap items-center gap-2">
-                          <Badge variant="accent" title="Pending offers">
-                            {pendingForProp} pending offer{pendingForProp === 1 ? "" : "s"}
-                          </Badge>
+                          {pendingForProp > 0 && (
+                            <Badge variant="accent" title="Pending offers">
+                              {pendingForProp} pending offer{pendingForProp === 1 ? "" : "s"}
+                            </Badge>
+                          )}
+                          {dd && (
+                            <Badge variant={dd.variant} title="Due diligence date">
+                              {dd.label}
+                            </Badge>
+                          )}
                         </div>
                       )}
                     </div>

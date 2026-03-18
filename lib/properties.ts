@@ -56,17 +56,19 @@ export function effectiveVisibility(p: Pick<Property, "visibility" | "vipRelease
     const vipTime = p.vipReleaseAt ? new Date(p.vipReleaseAt).getTime() : null
     const pubTime = p.publicReleaseAt ? new Date(p.publicReleaseAt).getTime() : null
     if (vipTime && now >= vipTime) {
-      // exclusive window over — check if VIP window also over
-      if (pubTime && now >= pubTime) return "public"
-      return "vip"
+      // Exclusive window is over — enter VIP phase only if publicReleaseAt is set and still in the future
+      if (pubTime && now < pubTime) return "vip"
+      // No VIP window configured (or it also passed) → public
+      return "public"
     }
     return "exclusive"
   }
 
   if (vis === "vip") {
     const pubTime = p.publicReleaseAt ? new Date(p.publicReleaseAt).getTime() : null
-    if (pubTime && now >= pubTime) return "public"
-    return "vip"
+    // VIP is a timed window. If no end time is set, or it has passed → public.
+    if (pubTime && now < pubTime) return "vip"
+    return "public"
   }
 
   return "public"

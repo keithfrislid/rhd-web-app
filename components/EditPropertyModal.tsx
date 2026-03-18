@@ -31,6 +31,7 @@ type PropertyRowForEdit = {
   repairs: number
   lat: number
   lng: number
+  due_diligence_date?: string | null
 }
 
 export default function EditPropertyModal({
@@ -61,6 +62,7 @@ export default function EditPropertyModal({
   const [lat, setLat] = useState("")
   const [lng, setLng] = useState("")
   const [geocodedLabel, setGeocodedLabel] = useState<string | null>(null)
+  const [dueDiligenceDate, setDueDiligenceDate] = useState("")
 
   const [originalAddress, setOriginalAddress] = useState("")
   const [originalLat, setOriginalLat] = useState("")
@@ -84,6 +86,7 @@ export default function EditPropertyModal({
     setLat(String(property.lat ?? ""))
     setLng(String(property.lng ?? ""))
     setGeocodedLabel(null)
+    setDueDiligenceDate(property.due_diligence_date ?? "")
 
     setOriginalAddress(property.address ?? "")
     setOriginalLat(String(property.lat ?? ""))
@@ -180,6 +183,7 @@ export default function EditPropertyModal({
         repairs: toNumber(repairs),
         lat: toNumber(lat),
         lng: toNumber(lng),
+        due_diligence_date: dueDiligenceDate.trim() || null,
       })
       .eq("id", property.id)
 
@@ -284,7 +288,7 @@ export default function EditPropertyModal({
                 </Select>
               </div>
 
-              <div className="md:col-span-3">
+              <div className="md:col-span-2">
                 <label className="text-xs text-[var(--muted)]">Photo URL (optional)</label>
                 <Input
                   value={photoUrl}
@@ -292,6 +296,19 @@ export default function EditPropertyModal({
                   placeholder="https://photos.google.com/..."
                   className="mt-1"
                 />
+              </div>
+
+              <div>
+                <label className="text-xs text-[var(--muted)]">Due Diligence Date <span className="text-[10px] text-[var(--accent)]">(admin only)</span></label>
+                <Input
+                  type="date"
+                  value={dueDiligenceDate}
+                  onChange={(e) => setDueDiligenceDate(e.target.value)}
+                  className="mt-1"
+                />
+                <div className="mt-1 text-[11px] text-[var(--muted)]">
+                  If passed while Under Contract, deal auto-archives as Closed Lost.
+                </div>
               </div>
             </CardContent>
           </Card>
