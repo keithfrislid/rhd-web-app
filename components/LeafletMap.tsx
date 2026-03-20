@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import "leaflet/dist/leaflet.css"
 
 import { supabase } from "@/lib/supabase"
@@ -31,6 +31,21 @@ export default function LeafletMap({
   const [skipMarkViewedId, setSkipMarkViewedId] = useState<string | null>(null)
 
   const [pendingOfferIds, setPendingOfferIds] = useState<Set<string>>(new Set())
+
+  // Derive which legend items are actually present on the map for this user
+  const activeLegendItems = useMemo(() => {
+    if (loading || viewedLoading) return new Set<string>()
+    const items = new Set<string>()
+    for (const p of properties) {
+      if (pendingOfferIds.has(p.id)) { items.add("pending"); continue }
+      const vis = effectiveVisibility(p)
+      if (vis === "exclusive") { items.add("firstdibs"); continue }
+      if (vis === "vip")       { items.add("vip");       continue }
+      if (viewedIds.has(p.id)) { items.add("viewed");    continue }
+      items.add("new")
+    }
+    return items
+  }, [properties, viewedIds, viewedLoading, loading, pendingOfferIds])
 
   // Load pending offer IDs for the current user
   useEffect(() => {
@@ -390,37 +405,32 @@ export default function LeafletMap({
         </div>
       )}
 
-      {/* Pin legend — bottom-right, hidden on mobile */}
-      {!loading && (
-        <div className="hidden sm:block absolute bottom-6 right-3 z-[1500] pointer-events-none">
-          <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/70 backdrop-blur px-3 py-1.5">
-            <span className="flex items-center gap-1.5 text-[10px] text-white/70">
-              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#7e22ce]" />
-              First Dibs
-            </span>
-            <span className="h-3 w-px bg-white/15" />
-            <span className="flex items-center gap-1.5 text-[10px] text-white/70">
-              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#eab308]" />
-              VIP
-            </span>
-            <span className="h-3 w-px bg-white/15" />
-            <span className="flex items-center gap-1.5 text-[10px] text-white/70">
-              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#ef4444]" />
-              New
-            </span>
-            <span className="h-3 w-px bg-white/15" />
-            <span className="flex items-center gap-1.5 text-[10px] text-white/70">
-              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#3b82f6]" />
-              Pending
-            </span>
-            <span className="h-3 w-px bg-white/15" />
-            <span className="flex items-center gap-1.5 text-[10px] text-white/70">
-              <span className="inline-block h-2 w-2 shrink-0 rounded-full bg-[#374151]" />
-              Viewed
-            </span>
+      {/* Pin legend — bottom-right, hidden on mobile, only shows active pin types */}
+      {!loading && activeLegendItems.size > 0 && (() => {
+        const all = [
+          { key: "firstdibs", color: "#7e22ce", label: "First Dibs" },
+          { key: "vip",       color: "#eab308", label: "VIP" },
+          { key: "new",       color: "#ef4444", label: "New" },
+          { key: "pending",   color: "#3b82f6", label: "Pending" },
+          { key: "viewed",    color: "#374151", label: "Viewed" },
+        ].filter((item) => activeLegendItems.has(item.key))
+
+        return (
+          <div className="hidden sm:block absolute bottom-6 right-3 z-[1500] pointer-events-none">
+            <div className="flex items-center gap-2.5 rounded-full border border-white/10 bg-black/70 backdrop-blur px-3 py-1.5">
+              {all.map((item, i) => (
+                <span key={item.key} className="flex items-center gap-2.5">
+                  {i > 0 && <span className="h-3 w-px bg-white/15" />}
+                  <span className="flex items-center gap-1.5 text-[10px] text-white/70">
+                    <span className="inline-block h-2 w-2 shrink-0 rounded-full" style={{ backgroundColor: item.color }} />
+                    {item.label}
+                  </span>
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )
+      })()}
 
       {selected && (
         <>
