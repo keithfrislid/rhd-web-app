@@ -13,6 +13,7 @@ export default function AdminHeaderTabs({
   inboxCount,
   usersLoading,
   pendingUsersCount,
+  draftsCount,
   onAddProperty,
   onRefresh,
 }: {
@@ -22,6 +23,7 @@ export default function AdminHeaderTabs({
   inboxCount: number
   usersLoading: boolean
   pendingUsersCount: number
+  draftsCount: number
   onAddProperty: () => void
   onRefresh: () => void
 }) {
@@ -31,6 +33,13 @@ export default function AdminHeaderTabs({
     right?: React.ReactNode
   }> = [
     { key: "properties", label: "Properties" },
+    {
+      key: "drafts",
+      label: "Drafts",
+      right: draftsCount > 0 ? (
+        <TabCount loading={false} count={draftsCount} tone="neutral" />
+      ) : undefined,
+    },
     {
       key: "inbox",
       label: "Inbox",

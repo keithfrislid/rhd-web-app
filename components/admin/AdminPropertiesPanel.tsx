@@ -29,6 +29,7 @@ type Props = {
   properties: PropertyRow[]
   pendingCountByProperty: Map<string, number>
   onOpen: (propertyId: string) => void
+  defaultLifecycle?: LifecycleView
 }
 
 function dueDiligenceStatus(ddDate: string | null | undefined): {
@@ -79,9 +80,10 @@ export default function AdminPropertiesPanel({
   properties,
   pendingCountByProperty,
   onOpen,
+  defaultLifecycle = "active",
 }: Props) {
   const [search, setSearch] = useState("")
-  const [lifecycle, setLifecycle] = useState<LifecycleView>("active")
+  const [lifecycle, setLifecycle] = useState<LifecycleView>(defaultLifecycle)
 
   const filteredAndSorted = useMemo(() => {
     const q = search.trim().toLowerCase()

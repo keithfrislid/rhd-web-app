@@ -59,6 +59,11 @@ export default function AdminPage() {
     [properties, selectedId]
   )
 
+  const draftsCount = useMemo(
+    () => properties.filter((p) => !p.is_archived && p.status === "Draft").length,
+    [properties]
+  )
+
   const deleteProperty = async (propertyId: string, address: string) => {
     if (deleteBusy) return
     const ok = window.confirm(`Delete this property?\n\n${address}\n\nThis cannot be undone.`)
@@ -179,6 +184,7 @@ export default function AdminPage() {
           inboxCount={pendingOffers.length}
           usersLoading={usersLoading}
           pendingUsersCount={pendingUsersCount}
+          draftsCount={draftsCount}
           onAddProperty={() => setCreateOpen(true)}
           onRefresh={refreshAll}
         />
@@ -189,11 +195,13 @@ export default function AdminPage() {
           </Card>
         )}
 
-        {view === "properties" && (
+        {(view === "properties" || view === "drafts") && (
           <AdminPropertiesPanel
+            key={view}
             propsLoading={propsLoading}
             properties={properties}
             pendingCountByProperty={pendingCountByProperty}
+            defaultLifecycle={view === "drafts" ? "draft" : "active"}
             onOpen={(propertyId) => {
               setSelectedId(propertyId)
               setDetailsOpen(true)

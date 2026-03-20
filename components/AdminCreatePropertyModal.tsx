@@ -95,15 +95,17 @@ export default function AdminCreatePropertyModal({
   const [geocodedLabel, setGeocodedLabel] = useState<string | null>(null)
 
   const liveFieldsComplete = useMemo(() => {
+    if (!dueDiligenceDate.trim()) return false
     // Require all numeric fields to be > 0 (catches empty strings → 0 and DB placeholder 0s)
     const required = [price, beds, baths, sqft, acres, arv, repairs]
     if (required.some((v) => toNumber(v) <= 0)) return false
     const latOk = lat.trim() === "" || Number.isFinite(toNumber(lat))
     const lngOk = lng.trim() === "" || Number.isFinite(toNumber(lng))
     return latOk && lngOk
-  }, [price, beds, baths, sqft, acres, arv, repairs, lat, lng])
+  }, [dueDiligenceDate, price, beds, baths, sqft, acres, arv, repairs, lat, lng])
 
-  const canSaveDraft = address.trim().length > 0
+  // Updating an existing draft also requires DD date; initial save only needs address
+  const canSaveDraft = address.trim().length > 0 && (!editingDraft || dueDiligenceDate.trim() !== "")
 
   // Next → requires all fields to be complete (always — Draft is saved via its own button)
   const canNext = useMemo(() => {
