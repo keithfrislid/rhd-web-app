@@ -13,6 +13,23 @@ import { cn } from "@/lib/cn"
 type PropertyStatus = "Draft" | "New" | "Price Drop" | "Under Contract"
 type Visibility = "public" | "vip" | "exclusive"
 
+type DraftProperty = {
+  id: string
+  address: string
+  photo_url: string | null
+  price: number | null
+  beds: number | null
+  baths: number | null
+  sqft: number | null
+  acres: number | null
+  arv: number | null
+  repairs: number | null
+  lat: number | null
+  lng: number | null
+  county?: string | null
+  due_diligence_date?: string | null
+}
+
 type VipBuyer = {
   user_id: string
   email: string | null
@@ -37,10 +54,12 @@ export default function AdminCreatePropertyModal({
   open,
   onClose,
   onCreated,
+  editingDraft,
 }: {
   open: boolean
   onClose: () => void
   onCreated: () => void
+  editingDraft?: DraftProperty | null
 }) {
   const [step, setStep] = useState<1 | 2>(1)
   const [saving, setSaving] = useState(false)
@@ -161,6 +180,28 @@ export default function AdminCreatePropertyModal({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
+  // Pre-populate fields when opening a draft for publishing
+  useEffect(() => {
+    if (!open || !editingDraft) return
+    const n = (v: number | null | undefined) => (v != null ? String(v) : "")
+    setAddress(editingDraft.address ?? "")
+    setPhotoUrl(editingDraft.photo_url ?? "")
+    setStatus("New")
+    setPrice(n(editingDraft.price))
+    setBeds(n(editingDraft.beds))
+    setBaths(n(editingDraft.baths))
+    setSqft(n(editingDraft.sqft))
+    setAcres(n(editingDraft.acres))
+    setArv(n(editingDraft.arv))
+    setRepairs(n(editingDraft.repairs))
+    setLat(n(editingDraft.lat))
+    setLng(n(editingDraft.lng))
+    setCounty(editingDraft.county ?? "")
+    setDueDiligenceDate(editingDraft.due_diligence_date ?? "")
+    setGeocodedLabel(null)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, editingDraft?.id])
+
   const geocodeAddress = async () => {
     if (geocoding) return
     setErrorMsg(null)
@@ -273,7 +314,7 @@ export default function AdminCreatePropertyModal({
 
     setSaving(true)
 
-    const { error } = await supabase.from("properties").insert({
+    const payload = {
       address: address.trim(),
       photo_url: photoUrl.trim() ? photoUrl.trim() : null,
       status,
@@ -293,7 +334,11 @@ export default function AdminCreatePropertyModal({
       public_release_at: hoursFromNowIso(publicHours),
       exclusive_user_id: visibility === "exclusive" ? exclusiveUserId : null,
       due_diligence_date: dueDiligenceDate.trim() || null,
-    })
+    }
+
+    const { error } = editingDraft
+      ? await supabase.from("properties").update(payload).eq("id", editingDraft.id)
+      : await supabase.from("properties").insert(payload)
 
     if (error) {
       setErrorMsg(error.message)
@@ -312,7 +357,7 @@ export default function AdminCreatePropertyModal({
   return (
     <div className="fixed inset-0 z-[7000] flex items-end justify-center bg-black/70 p-3 backdrop-blur-sm md:items-center">
       <ModalShell
-        title="Add Property"
+        title={editingDraft ? "Publish Draft" : "Add Property"}
         description={step === 1 ? "Step 1 of 2 · Property Details" : "Step 2 of 2 · First Dibs / Visibility"}
         right={
           <Button
@@ -337,9 +382,11 @@ export default function AdminCreatePropertyModal({
               >
                 Cancel
               </Button>
-              <Button variant="secondary" onClick={saveDraft} disabled={!canSaveDraft || saving}>
-                {saving ? "Saving…" : "Save as Draft"}
-              </Button>
+              {!editingDraft && (
+                <Button variant="secondary" onClick={saveDraft} disabled={!canSaveDraft || saving}>
+                  {saving ? "Saving…" : "Save as Draft"}
+                </Button>
+              )}
               <Button variant="primary" onClick={goToStep2} disabled={!canNext}>
                 Next →
               </Button>
@@ -350,7 +397,7 @@ export default function AdminCreatePropertyModal({
                 ← Back
               </Button>
               <Button variant="primary" onClick={submit} disabled={!canSubmit || saving}>
-                {saving ? "Saving…" : "Create Property"}
+                {saving ? "Saving…" : editingDraft ? "Publish Property" : "Create Property"}
               </Button>
             </div>
           )

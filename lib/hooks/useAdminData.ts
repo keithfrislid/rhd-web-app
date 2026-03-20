@@ -31,6 +31,8 @@ export type PropertyRow = {
   closed_reason?: string | null
   closed_at?: string | null
 
+  county?: string | null
+
   // due diligence (admin-only)
   due_diligence_date?: string | null
 }
@@ -93,7 +95,7 @@ export function useAdminData({ selectedId, setSelectedId, setErrorMsg }: Params)
       const { data, error } = await supabase
         .from("properties")
         .select(
-          "id,address,status,photo_url,price,beds,baths,sqft,acres,arv,repairs,lat,lng,created_at,is_accepting_offers,accepted_offer_id,is_archived,closed_outcome,closed_reason,closed_at,visibility,exclusive_user_id,vip_release_at,public_release_at,due_diligence_date"
+          "id,address,status,photo_url,price,beds,baths,sqft,acres,arv,repairs,lat,lng,county,created_at,is_accepting_offers,accepted_offer_id,is_archived,closed_outcome,closed_reason,closed_at,visibility,exclusive_user_id,vip_release_at,public_release_at,due_diligence_date"
         )
         .order("created_at", { ascending: false })
       if (error) throw error

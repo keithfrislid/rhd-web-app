@@ -33,6 +33,7 @@ export default function AdminPage() {
 
   const [createOpen, setCreateOpen] = useState(false)
   const [editingProperty, setEditingProperty] = useState<PropertyRow | null>(null)
+  const [publishingDraft, setPublishingDraft] = useState<PropertyRow | null>(null)
 
   const [deleteBusy, setDeleteBusy] = useState<string | null>(null)
   const [closeBusy, setCloseBusy] = useState<string | null>(null)
@@ -230,7 +231,11 @@ export default function AdminPage() {
         onRefresh={refreshAll}
         onEdit={(p) => {
           setDetailsOpen(false)
-          setEditingProperty(p)
+          if (p.status === "Draft") {
+            setPublishingDraft(p)
+          } else {
+            setEditingProperty(p)
+          }
         }}
         onDelete={deleteProperty}
         onCloseProperty={closeProperty}
@@ -240,9 +245,16 @@ export default function AdminPage() {
       />
 
       <AdminCreatePropertyModal
-        open={createOpen}
-        onClose={() => setCreateOpen(false)}
-        onCreated={refreshAll}
+        open={createOpen || !!publishingDraft}
+        onClose={() => {
+          setCreateOpen(false)
+          setPublishingDraft(null)
+        }}
+        onCreated={() => {
+          setPublishingDraft(null)
+          refreshAll()
+        }}
+        editingDraft={publishingDraft}
       />
 
       {editingProperty && (
