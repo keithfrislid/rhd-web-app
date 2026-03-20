@@ -22,8 +22,12 @@ function toNumberOrNull(val: string): number | null {
   return Number.isFinite(n) ? n : null
 }
 
-function allFieldsFilled(fields: string[]) {
-  // Number("") === 0 which passes isFinite, so also require non-empty
+// Require numeric fields to be > 0 (catches empty → 0 and DB placeholder 0s)
+function positiveFields(fields: string[]) {
+  return fields.every((v) => toNumber(v) > 0)
+}
+// Coordinates can be negative (western hemisphere) — just require non-empty finite number
+function coordsFilled(fields: string[]) {
   return fields.every((v) => v.trim() !== "" && Number.isFinite(toNumber(v)))
 }
 
@@ -109,7 +113,9 @@ export default function EditPropertyModal({
   }, [address, originalAddress])
 
   const liveFieldsComplete = useMemo(
-    () => allFieldsFilled([price, beds, baths, sqft, acres, arv, repairs, lat, lng]),
+    () =>
+      positiveFields([price, beds, baths, sqft, acres, arv, repairs]) &&
+      coordsFilled([lat, lng]),
     [price, beds, baths, sqft, acres, arv, repairs, lat, lng]
   )
 

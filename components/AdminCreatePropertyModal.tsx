@@ -95,10 +95,9 @@ export default function AdminCreatePropertyModal({
   const [geocodedLabel, setGeocodedLabel] = useState<string | null>(null)
 
   const liveFieldsComplete = useMemo(() => {
+    // Require all numeric fields to be > 0 (catches empty strings → 0 and DB placeholder 0s)
     const required = [price, beds, baths, sqft, acres, arv, repairs]
-    // Empty string passes Number.isFinite (Number("") === 0), so check non-empty too
-    if (required.some((v) => v.trim() === "")) return false
-    if (required.some((v) => !Number.isFinite(toNumber(v)))) return false
+    if (required.some((v) => toNumber(v) <= 0)) return false
     const latOk = lat.trim() === "" || Number.isFinite(toNumber(lat))
     const lngOk = lng.trim() === "" || Number.isFinite(toNumber(lng))
     return latOk && lngOk
@@ -270,10 +269,10 @@ export default function AdminCreatePropertyModal({
 
     const numOrNull = (val: string) => { const n = toNumber(val); return Number.isFinite(n) ? n : null }
 
-    const { error } = await supabase.from("properties").insert({
+    const draftPayload = {
       address: address.trim(),
       photo_url: photoUrl.trim() ? photoUrl.trim() : null,
-      status: "Draft",
+      status: "Draft" as const,
       price: numOrNull(price),
       beds: numOrNull(beds),
       baths: numOrNull(baths),
@@ -286,7 +285,11 @@ export default function AdminCreatePropertyModal({
       county: county.trim() || null,
       auto_notify: false,
       due_diligence_date: dueDiligenceDate.trim() || null,
-    })
+    }
+
+    const { error } = editingDraft
+      ? await supabase.from("properties").update(draftPayload).eq("id", editingDraft.id)
+      : await supabase.from("properties").insert(draftPayload)
 
     if (error) {
       setErrorMsg(error.message)
@@ -382,11 +385,9 @@ export default function AdminCreatePropertyModal({
               >
                 Cancel
               </Button>
-              {!editingDraft && (
-                <Button variant="secondary" onClick={saveDraft} disabled={!canSaveDraft || saving}>
-                  {saving ? "Saving…" : "Save as Draft"}
-                </Button>
-              )}
+              <Button variant="secondary" onClick={saveDraft} disabled={!canSaveDraft || saving}>
+                {saving ? "Saving…" : editingDraft ? "Update Draft" : "Save as Draft"}
+              </Button>
               <Button variant="primary" onClick={goToStep2} disabled={!canNext}>
                 Next →
               </Button>
