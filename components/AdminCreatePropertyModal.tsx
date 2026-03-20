@@ -75,9 +75,7 @@ export default function AdminCreatePropertyModal({
   const [lng, setLng] = useState("")
   const [geocodedLabel, setGeocodedLabel] = useState<string | null>(null)
 
-  // Step 1 is valid when all property fields are filled
-  const canNext = useMemo(() => {
-    if (!address.trim()) return false
+  const liveFieldsComplete = useMemo(() => {
     const nums = [
       toNumber(price),
       toNumber(beds),
@@ -90,7 +88,14 @@ export default function AdminCreatePropertyModal({
     const latOk = lat.trim() === "" || Number.isFinite(toNumber(lat))
     const lngOk = lng.trim() === "" || Number.isFinite(toNumber(lng))
     return nums.every((n) => Number.isFinite(n)) && latOk && lngOk
-  }, [address, price, beds, baths, sqft, acres, arv, repairs, lat, lng])
+  }, [price, beds, baths, sqft, acres, arv, repairs, lat, lng])
+
+  // Step 1: Drafts only need an address; live statuses require all fields
+  const canNext = useMemo(() => {
+    if (!address.trim()) return false
+    if (status === "Draft") return true
+    return liveFieldsComplete
+  }, [address, status, liveFieldsComplete])
 
   // Step 2 is valid when exclusive VIP is selected if required
   const canSubmit = useMemo(() => {
@@ -225,7 +230,10 @@ export default function AdminCreatePropertyModal({
     if (saving) return
     setErrorMsg(null)
 
-    if (lat.trim() === "" || lng.trim() === "") {
+    const isDraft = status === "Draft"
+
+    // Live properties require coordinates
+    if (!isDraft && (lat.trim() === "" || lng.trim() === "")) {
       await geocodeAddress()
       if (lat.trim() === "" || lng.trim() === "") {
         setErrorMsg("Geocode required: could not get coordinates for this address.")
@@ -235,19 +243,21 @@ export default function AdminCreatePropertyModal({
 
     setSaving(true)
 
+    const numOrNull = (val: string) => { const n = toNumber(val); return Number.isFinite(n) ? n : null }
+
     const { error } = await supabase.from("properties").insert({
       address: address.trim(),
-      photo_url: photoUrl.trim() ? photoUrl.trim() : "https://photos.google.com/",
+      photo_url: photoUrl.trim() ? photoUrl.trim() : null,
       status,
-      price: toNumber(price),
-      beds: toNumber(beds),
-      baths: toNumber(baths),
-      sqft: toNumber(sqft),
-      acres: toNumber(acres),
-      arv: toNumber(arv),
-      repairs: toNumber(repairs),
-      lat: toNumber(lat),
-      lng: toNumber(lng),
+      price: numOrNull(price),
+      beds: numOrNull(beds),
+      baths: numOrNull(baths),
+      sqft: numOrNull(sqft),
+      acres: numOrNull(acres),
+      arv: numOrNull(arv),
+      repairs: numOrNull(repairs),
+      lat: numOrNull(lat),
+      lng: numOrNull(lng),
       county: county.trim() || null,
       auto_notify: autoNotify,
       visibility,
@@ -319,6 +329,12 @@ export default function AdminCreatePropertyModal({
         {errorMsg && (
           <div className="mb-4 rounded-xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-3 text-sm text-[var(--text)]">
             {errorMsg}
+          </div>
+        )}
+
+        {step === 1 && status === "Draft" && !liveFieldsComplete && (
+          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-400">
+            Draft — missing fields are OK for now. Fill in all numbers before publishing as Active.
           </div>
         )}
 

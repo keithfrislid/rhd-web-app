@@ -17,6 +17,15 @@ function toNumber(val: string) {
   return Number.isFinite(n) ? n : NaN
 }
 
+function toNumberOrNull(val: string): number | null {
+  const n = Number(val)
+  return Number.isFinite(n) ? n : null
+}
+
+function allFieldsFilled(fields: string[]) {
+  return fields.every((v) => Number.isFinite(toNumber(v)))
+}
+
 type PropertyRowForEdit = {
   id: string
   address: string
@@ -98,21 +107,18 @@ export default function EditPropertyModal({
     return address.trim() !== originalAddress.trim()
   }, [address, originalAddress])
 
+  const liveFieldsComplete = useMemo(
+    () => allFieldsFilled([price, beds, baths, sqft, acres, arv, repairs, lat, lng]),
+    [price, beds, baths, sqft, acres, arv, repairs, lat, lng]
+  )
+
   const canSubmit = useMemo(() => {
     if (!address.trim()) return false
-    const nums = [
-      toNumber(price),
-      toNumber(beds),
-      toNumber(baths),
-      toNumber(sqft),
-      toNumber(acres),
-      toNumber(arv),
-      toNumber(repairs),
-      toNumber(lat),
-      toNumber(lng),
-    ]
-    return nums.every((n) => Number.isFinite(n))
-  }, [address, price, beds, baths, sqft, acres, arv, repairs, lat, lng])
+    // Drafts only need an address — everything else can be filled in later
+    if (status === "Draft") return true
+    // Any live status requires all fields + coordinates
+    return liveFieldsComplete
+  }, [address, status, liveFieldsComplete])
 
   const geocodeAddress = async () => {
     if (geocoding) return
@@ -156,13 +162,16 @@ export default function EditPropertyModal({
     if (saving) return
     setErrorMsg(null)
 
-    if (addressChanged && lat.trim() === originalLat.trim() && lng.trim() === originalLng.trim()) {
+    const isDraft = status === "Draft"
+
+    // Live properties need geocoordinates when address changes
+    if (!isDraft && addressChanged && lat.trim() === originalLat.trim() && lng.trim() === originalLng.trim()) {
       setErrorMsg("Address changed — click Geocode (or manually update lat/lng) before saving.")
       return
     }
 
     if (!canSubmit) {
-      setErrorMsg("Please fill all required fields.")
+      setErrorMsg(isDraft ? "Enter an address to save as draft." : "Please fill all required fields before publishing.")
       return
     }
 
@@ -172,17 +181,17 @@ export default function EditPropertyModal({
       .from("properties")
       .update({
         address: address.trim(),
-        photo_url: photoUrl.trim() ? photoUrl.trim() : "https://photos.google.com/",
+        photo_url: photoUrl.trim() ? photoUrl.trim() : null,
         status,
-        price: toNumber(price),
-        beds: toNumber(beds),
-        baths: toNumber(baths),
-        sqft: toNumber(sqft),
-        acres: toNumber(acres),
-        arv: toNumber(arv),
-        repairs: toNumber(repairs),
-        lat: toNumber(lat),
-        lng: toNumber(lng),
+        price: toNumberOrNull(price),
+        beds: toNumberOrNull(beds),
+        baths: toNumberOrNull(baths),
+        sqft: toNumberOrNull(sqft),
+        acres: toNumberOrNull(acres),
+        arv: toNumberOrNull(arv),
+        repairs: toNumberOrNull(repairs),
+        lat: toNumberOrNull(lat),
+        lng: toNumberOrNull(lng),
         due_diligence_date: dueDiligenceDate.trim() || null,
       })
       .eq("id", property.id)
@@ -229,6 +238,12 @@ export default function EditPropertyModal({
           {errorMsg && (
             <div className="rounded-2xl border border-[var(--danger)]/30 bg-[var(--danger)]/10 p-3 text-sm text-[var(--danger)]">
               {errorMsg}
+            </div>
+          )}
+
+          {status === "Draft" && !liveFieldsComplete && (
+            <div className="rounded-2xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-400">
+              Draft — missing required fields. Fill in all numbers and coordinates before changing status to Active.
             </div>
           )}
 
