@@ -1,6 +1,6 @@
 import { supabase } from "@/lib/supabase"
 
-export type PropertyStatus = "New" | "Price Drop" | "Under Contract"
+export type PropertyStatus = "Draft" | "New" | "Price Drop" | "Under Contract"
 export type PropertyVisibility = "public" | "vip" | "exclusive"
 
 export type Property = {
@@ -84,6 +84,9 @@ export async function fetchProperties(opts?: { includeUnderContract?: boolean })
     )
     .eq("is_archived", false)
     .order("created_at", { ascending: false })
+
+  // Never show Draft properties to buyers — they are admin-staging only
+  q = q.neq("status", "Draft")
 
   if (!includeUnderContract) {
     q = q.neq("status", "Under Contract")

@@ -282,6 +282,7 @@ export default function EditPropertyModal({
                   onChange={(e) => setStatus(e.target.value as PropertyStatus)}
                   className="mt-1"
                 >
+                  <option value="Draft">Draft</option>
                   <option value="New">New</option>
                   <option value="Price Drop">Price Drop</option>
                   <option value="Under Contract">Under Contract</option>
@@ -307,7 +308,7 @@ export default function EditPropertyModal({
                   className="mt-1"
                 />
                 <div className="mt-1 text-[11px] text-[var(--muted)]">
-                  If passed while Under Contract, deal auto-archives as Closed Lost.
+                  Last day to shop the deal. If passed without going Under Contract, auto-archives as Closed Lost.
                 </div>
               </div>
             </CardContent>

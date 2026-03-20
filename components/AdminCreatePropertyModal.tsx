@@ -10,7 +10,7 @@ import { Select } from "@/components/ui/Select"
 import { Card } from "@/components/ui/Card"
 import { cn } from "@/lib/cn"
 
-type PropertyStatus = "New" | "Price Drop" | "Under Contract"
+type PropertyStatus = "Draft" | "New" | "Price Drop" | "Under Contract"
 type Visibility = "public" | "vip" | "exclusive"
 
 type VipBuyer = {
@@ -357,6 +357,7 @@ export default function AdminCreatePropertyModal({
                   onChange={(e) => setStatus(e.target.value as PropertyStatus)}
                   className="mt-1"
                 >
+                  <option value="Draft">Draft</option>
                   <option value="New">New</option>
                   <option value="Price Drop">Price Drop</option>
                   <option value="Under Contract">Under Contract</option>

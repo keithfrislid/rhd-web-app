@@ -4,7 +4,7 @@ import { supabase } from "@/lib/supabase"
 export type PropertyRow = {
   id: string
   address: string
-  status: "New" | "Price Drop" | "Under Contract"
+  status: "Draft" | "New" | "Price Drop" | "Under Contract"
   photo_url: string | null
   price: number
   beds: number
@@ -53,7 +53,7 @@ export type PendingOfferRow = {
     id: string
     address: string
     price: number
-    status: "New" | "Price Drop" | "Under Contract"
+    status: "Draft" | "New" | "Price Drop" | "Under Contract"
   } | null
 }
 

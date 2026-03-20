@@ -17,6 +17,7 @@ function spread(p: { arv: number; price: number; repairs: number }) {
 
 type LifecycleView =
   | "all"
+  | "draft"
   | "active"
   | "under_contract"
   | "closed_won"
@@ -45,6 +46,9 @@ function dueDiligenceStatus(ddDate: string | null | undefined): {
   return { label: `DD in ${diffDays}d`, variant: "default" }
 }
 
+function isDraft(p: PropertyRow) {
+  return !p.is_archived && p.status === "Draft"
+}
 function isUnderContract(p: PropertyRow) {
   return p.status === "Under Contract" && !p.is_archived
 }
@@ -55,13 +59,14 @@ function isClosedLost(p: PropertyRow) {
   return !!p.is_archived && p.closed_outcome === "lost"
 }
 function isActive(p: PropertyRow) {
-  return !p.is_archived && p.status !== "Under Contract"
+  return !p.is_archived && p.status !== "Under Contract" && p.status !== "Draft"
 }
 
 function statusBadge(p: PropertyRow): {
   label: string
   variant: "default" | "success" | "warning" | "danger" | "outline"
 } {
+  if (isDraft(p)) return { label: "Draft", variant: "default" }
   if (isClosedWon(p)) return { label: "Closed Won", variant: "success" }
   if (isClosedLost(p)) return { label: "Closed Lost", variant: "warning" }
   if (isUnderContract(p)) return { label: "Under Contract", variant: "warning" }
@@ -87,6 +92,8 @@ export default function AdminPropertiesPanel({
     if (lifecycle !== "all") {
       list = list.filter((p) => {
         switch (lifecycle) {
+          case "draft":
+            return isDraft(p)
           case "active":
             return isActive(p)
           case "under_contract":
@@ -137,6 +144,7 @@ export default function AdminPropertiesPanel({
 
           <Select value={lifecycle} onChange={(e) => setLifecycle(e.target.value as LifecycleView)}>
             <option value="active">Filter: Active</option>
+            <option value="draft">Filter: Drafts</option>
             <option value="under_contract">Filter: Under Contract</option>
             <option value="closed_won">Filter: Closed Won</option>
             <option value="closed_lost">Filter: Closed Lost</option>
@@ -160,6 +168,7 @@ export default function AdminPropertiesPanel({
             const pendingForProp = pendingCountByProperty.get(p.id) ?? 0
             const s = statusBadge(p)
             const dd = isActive(p) ? dueDiligenceStatus(p.due_diligence_date) : null
+            const needsSetup = isDraft(p)
 
             return (
               <button
@@ -187,8 +196,13 @@ export default function AdminPropertiesPanel({
                         </span>
                       </div>
 
-                      {(pendingForProp > 0 || dd) && (
+                      {(pendingForProp > 0 || dd || needsSetup) && (
                         <div className="mt-2 flex flex-wrap items-center gap-2">
+                          {needsSetup && (
+                            <Badge variant="muted" title="Draft — not visible to buyers">
+                              Needs publish
+                            </Badge>
+                          )}
                           {pendingForProp > 0 && (
                             <Badge variant="accent" title="Pending offers">
                               {pendingForProp} pending offer{pendingForProp === 1 ? "" : "s"}
