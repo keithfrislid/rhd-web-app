@@ -126,18 +126,9 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-[13px] font-medium text-[var(--text)]">
-                  Password
-                </label>
-                <button
-                  type="button"
-                  onClick={() => router.push("/forgot-password")}
-                  className="text-[12px] text-[var(--accent)] hover:underline"
-                >
-                  Forgot password?
-                </button>
-              </div>
+              <label className="text-[13px] font-medium text-[var(--text)] block mb-1.5">
+                Password
+              </label>
               <input
                 type="password"
                 required
@@ -146,6 +137,15 @@ export default function LoginPage() {
                 className="w-full rounded-xl border border-[var(--border)] bg-[var(--surface-2)] px-3 py-2.5 text-sm text-[var(--text)] placeholder:text-[var(--muted)] outline-none focus:border-[var(--accent)]/50 transition-colors"
                 placeholder="••••••••"
               />
+              <div className="flex justify-end mt-1.5">
+                <button
+                  type="button"
+                  onClick={() => router.push("/forgot-password")}
+                  className="text-[12px] text-[var(--accent)] hover:underline"
+                >
+                  Forgot password?
+                </button>
+              </div>
             </div>
 
             {errorMessage && (
