@@ -90,12 +90,13 @@ export default function AdminCreatePropertyModal({
     return nums.every((n) => Number.isFinite(n)) && latOk && lngOk
   }, [price, beds, baths, sqft, acres, arv, repairs, lat, lng])
 
-  // Step 1: Drafts only need an address; live statuses require all fields
+  const canSaveDraft = address.trim().length > 0
+
+  // Next → requires all fields to be complete (always — Draft is saved via its own button)
   const canNext = useMemo(() => {
     if (!address.trim()) return false
-    if (status === "Draft") return true
     return liveFieldsComplete
-  }, [address, status, liveFieldsComplete])
+  }, [address, liveFieldsComplete])
 
   // Step 2 is valid when exclusive VIP is selected if required
   const canSubmit = useMemo(() => {
@@ -226,21 +227,9 @@ export default function AdminCreatePropertyModal({
     setStep(2)
   }
 
-  const submit = async () => {
-    if (saving) return
+  const saveDraft = async () => {
+    if (saving || !canSaveDraft) return
     setErrorMsg(null)
-
-    const isDraft = status === "Draft"
-
-    // Live properties require coordinates
-    if (!isDraft && (lat.trim() === "" || lng.trim() === "")) {
-      await geocodeAddress()
-      if (lat.trim() === "" || lng.trim() === "") {
-        setErrorMsg("Geocode required: could not get coordinates for this address.")
-        return
-      }
-    }
-
     setSaving(true)
 
     const numOrNull = (val: string) => { const n = toNumber(val); return Number.isFinite(n) ? n : null }
@@ -248,7 +237,7 @@ export default function AdminCreatePropertyModal({
     const { error } = await supabase.from("properties").insert({
       address: address.trim(),
       photo_url: photoUrl.trim() ? photoUrl.trim() : null,
-      status,
+      status: "Draft",
       price: numOrNull(price),
       beds: numOrNull(beds),
       baths: numOrNull(baths),
@@ -258,6 +247,50 @@ export default function AdminCreatePropertyModal({
       repairs: numOrNull(repairs),
       lat: numOrNull(lat),
       lng: numOrNull(lng),
+      county: county.trim() || null,
+      auto_notify: false,
+      due_diligence_date: dueDiligenceDate.trim() || null,
+    })
+
+    if (error) {
+      setErrorMsg(error.message)
+      setSaving(false)
+      return
+    }
+
+    setSaving(false)
+    reset()
+    onClose()
+    onCreated()
+  }
+
+  const submit = async () => {
+    if (saving) return
+    setErrorMsg(null)
+
+    if (lat.trim() === "" || lng.trim() === "") {
+      await geocodeAddress()
+      if (lat.trim() === "" || lng.trim() === "") {
+        setErrorMsg("Geocode required: could not get coordinates for this address.")
+        return
+      }
+    }
+
+    setSaving(true)
+
+    const { error } = await supabase.from("properties").insert({
+      address: address.trim(),
+      photo_url: photoUrl.trim() ? photoUrl.trim() : null,
+      status,
+      price: toNumber(price),
+      beds: toNumber(beds),
+      baths: toNumber(baths),
+      sqft: toNumber(sqft),
+      acres: toNumber(acres),
+      arv: toNumber(arv),
+      repairs: toNumber(repairs),
+      lat: toNumber(lat),
+      lng: toNumber(lng),
       county: county.trim() || null,
       auto_notify: autoNotify,
       visibility,
@@ -309,6 +342,9 @@ export default function AdminCreatePropertyModal({
               >
                 Cancel
               </Button>
+              <Button variant="secondary" onClick={saveDraft} disabled={!canSaveDraft || saving}>
+                {saving ? "Saving…" : "Save as Draft"}
+              </Button>
               <Button variant="primary" onClick={goToStep2} disabled={!canNext}>
                 Next →
               </Button>
@@ -332,11 +368,6 @@ export default function AdminCreatePropertyModal({
           </div>
         )}
 
-        {step === 1 && status === "Draft" && !liveFieldsComplete && (
-          <div className="mb-4 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-400">
-            Draft — missing fields are OK for now. Fill in all numbers before publishing as Active.
-          </div>
-        )}
 
         {/* ── Step 1: Property Details ── */}
         {step === 1 && (
@@ -373,7 +404,6 @@ export default function AdminCreatePropertyModal({
                   onChange={(e) => setStatus(e.target.value as PropertyStatus)}
                   className="mt-1"
                 >
-                  <option value="Draft">Draft</option>
                   <option value="New">New</option>
                   <option value="Price Drop">Price Drop</option>
                   <option value="Under Contract">Under Contract</option>
