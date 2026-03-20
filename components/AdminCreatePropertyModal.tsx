@@ -76,18 +76,13 @@ export default function AdminCreatePropertyModal({
   const [geocodedLabel, setGeocodedLabel] = useState<string | null>(null)
 
   const liveFieldsComplete = useMemo(() => {
-    const nums = [
-      toNumber(price),
-      toNumber(beds),
-      toNumber(baths),
-      toNumber(sqft),
-      toNumber(acres),
-      toNumber(arv),
-      toNumber(repairs),
-    ]
+    const required = [price, beds, baths, sqft, acres, arv, repairs]
+    // Empty string passes Number.isFinite (Number("") === 0), so check non-empty too
+    if (required.some((v) => v.trim() === "")) return false
+    if (required.some((v) => !Number.isFinite(toNumber(v)))) return false
     const latOk = lat.trim() === "" || Number.isFinite(toNumber(lat))
     const lngOk = lng.trim() === "" || Number.isFinite(toNumber(lng))
-    return nums.every((n) => Number.isFinite(n)) && latOk && lngOk
+    return latOk && lngOk
   }, [price, beds, baths, sqft, acres, arv, repairs, lat, lng])
 
   const canSaveDraft = address.trim().length > 0

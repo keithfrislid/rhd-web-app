@@ -23,7 +23,8 @@ function toNumberOrNull(val: string): number | null {
 }
 
 function allFieldsFilled(fields: string[]) {
-  return fields.every((v) => Number.isFinite(toNumber(v)))
+  // Number("") === 0 which passes isFinite, so also require non-empty
+  return fields.every((v) => v.trim() !== "" && Number.isFinite(toNumber(v)))
 }
 
 type PropertyRowForEdit = {
