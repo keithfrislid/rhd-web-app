@@ -60,7 +60,7 @@ export default function AdminAnalyticsPanel() {
     if (error) {
       setErrorMsg(error.message)
     } else {
-      setRows((data ?? []) as ActivityRow[])
+      setRows((data ?? []) as unknown as ActivityRow[])
     }
 
     setLoading(false)
