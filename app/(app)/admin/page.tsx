@@ -17,6 +17,7 @@ import AdminPropertyDetailsModal from "@/components/admin/AdminPropertyDetailsMo
 import AdminInboxPanel from "@/components/admin/AdminInboxPanel"
 import AdminBuyBoxesPanel from "@/components/admin/AdminBuyBoxesPanel"
 import AdminBuyerRankingsPanel from "@/components/admin/AdminBuyerRankingsPanel"
+import AdminAnalyticsPanel from "@/components/admin/AdminAnalyticsPanel"
 
 import { PageShell } from "@/components/ui/PageShell"
 import { Card } from "@/components/ui/Card"
@@ -226,6 +227,8 @@ export default function AdminPage() {
         {view === "buyboxes" && <AdminBuyBoxesPanel />}
 
         {view === "buyers" && <AdminBuyerRankingsPanel />}
+
+        {view === "analytics" && <AdminAnalyticsPanel />}
       </PageShell>
 
       <AdminPropertyDetailsModal

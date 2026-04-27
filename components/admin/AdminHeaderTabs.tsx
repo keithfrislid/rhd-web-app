@@ -64,6 +64,7 @@ export default function AdminHeaderTabs({
     },
     { key: "buyboxes", label: "Buy Boxes" },
     { key: "buyers", label: "Buyer Rankings" },
+    { key: "analytics", label: "Analytics" },
   ]
 
   return (

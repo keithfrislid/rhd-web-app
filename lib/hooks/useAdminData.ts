@@ -59,7 +59,7 @@ export type PendingOfferRow = {
   } | null
 }
 
-export type AdminView = "properties" | "drafts" | "inbox" | "users" | "buyboxes" | "buyers"
+export type AdminView = "properties" | "drafts" | "inbox" | "users" | "buyboxes" | "buyers" | "analytics"
 
 type Params = {
   selectedId: string | null

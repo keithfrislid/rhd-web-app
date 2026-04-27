@@ -52,6 +52,21 @@ export default function AuthShell({ children }: { children: React.ReactNode }) {
         setReady(true);
       }
 
+      // Record a visit once per day per user (best-effort, non-blocking)
+      if (resolvedRole !== "pending") {
+        try {
+          const today = new Date().toDateString();
+          const key = `visit_${session.user.id}_${today}`;
+          if (!sessionStorage.getItem(key)) {
+            supabase.rpc("record_visit").then(() => {
+              sessionStorage.setItem(key, "1");
+            });
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       if (resolvedRole !== "pending" && intervalId) {
         clearInterval(intervalId);
         intervalId = null;

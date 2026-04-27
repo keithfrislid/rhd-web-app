@@ -277,11 +277,17 @@ Deno.serve(async (req) => {
       let email_error: string | null = null;
 
       try {
-        const to = approved?.email ?? null;
+        // profiles.email may be null if the trigger didn't copy it; fall back to auth.users
+        let to = approved?.email ?? null;
+        if (!to) {
+          const { data: authUser } = await service.auth.admin.getUserById(targetUserId);
+          to = authUser?.user?.email ?? null;
+        }
+
         if (to && RESEND_API_KEY && RESEND_FROM) {
           const subject = "Your account has been approved — RHD Wholesale";
           const html = approvalEmailHtml({
-            firstName: approved?.first_name,
+            firstName: approved?.first_name ?? null,
             appBaseUrl: APP_BASE_URL,
           });
 
