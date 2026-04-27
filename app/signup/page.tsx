@@ -48,6 +48,21 @@ export default function SignupPage() {
       return;
     }
 
+    // Notify admin of new access request (best-effort, non-blocking)
+    fetch(
+      `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/notify-admin-signup`,
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          first_name: firstName.trim(),
+          last_name: lastName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+        }),
+      }
+    ).catch(() => {});
+
     setSuccessMessage(
       "Account created. Please check your email to confirm your account, then sign in."
     );
