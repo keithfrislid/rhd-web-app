@@ -46,23 +46,37 @@ export default function AdminAnalyticsPanel() {
     setLoading(true)
     setErrorMsg(null)
 
-    const { data, error } = await supabase
-      .from("user_activity")
-      .select(`
-        user_id,
-        visit_count,
-        first_visited_at,
-        last_visited_at,
-        profiles ( first_name, last_name, email, role )
-      `)
-      .order("last_visited_at", { ascending: false })
+    const [activityRes, profilesRes] = await Promise.all([
+      supabase
+        .from("user_activity")
+        .select("user_id, visit_count, first_visited_at, last_visited_at")
+        .order("last_visited_at", { ascending: false }),
+      supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, email, role"),
+    ])
 
-    if (error) {
-      setErrorMsg(error.message)
-    } else {
-      setRows((data ?? []) as unknown as ActivityRow[])
+    if (activityRes.error) {
+      setErrorMsg(activityRes.error.message)
+      setLoading(false)
+      return
+    }
+    if (profilesRes.error) {
+      setErrorMsg(profilesRes.error.message)
+      setLoading(false)
+      return
     }
 
+    const profileMap = new Map(
+      (profilesRes.data ?? []).map((p) => [p.user_id, p])
+    )
+
+    const merged: ActivityRow[] = (activityRes.data ?? []).map((row) => ({
+      ...row,
+      profiles: profileMap.get(row.user_id) ?? null,
+    }))
+
+    setRows(merged)
     setLoading(false)
   }
 
