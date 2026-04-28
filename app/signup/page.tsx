@@ -43,12 +43,7 @@ export default function SignupPage() {
       return;
     }
 
-    if (data.session) {
-      router.push("/dashboard");
-      return;
-    }
-
-    // Notify admin of new access request (best-effort, non-blocking)
+    // Always notify admin regardless of whether Supabase auto-confirmed the session
     fetch(
       `${process.env.NEXT_PUBLIC_SUPABASE_URL}/functions/v1/notify-admin-signup`,
       {
@@ -66,6 +61,11 @@ export default function SignupPage() {
         }),
       }
     ).catch(() => {});
+
+    if (data.session) {
+      router.push("/dashboard");
+      return;
+    }
 
     setSuccessMessage(
       "Account created. Please check your email to confirm your account, then sign in."
