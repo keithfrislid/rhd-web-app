@@ -10,19 +10,15 @@ type ActivityRow = {
   visit_count: number
   first_visited_at: string
   last_visited_at: string
-  profiles: {
-    first_name: string | null
-    last_name: string | null
-    email: string | null
-    role: string | null
-  } | null
+  first_name: string | null
+  last_name: string | null
+  email: string | null
+  role: string | null
 }
 
 function displayName(row: ActivityRow) {
-  const p = row.profiles
-  if (!p) return row.user_id.slice(0, 8) + "…"
-  const name = `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim()
-  return name || p.email || row.user_id.slice(0, 8) + "…"
+  const name = `${row.first_name ?? ""} ${row.last_name ?? ""}`.trim()
+  return name || row.email || "Unknown User"
 }
 
 function timeAgo(iso: string) {
@@ -46,37 +42,14 @@ export default function AdminAnalyticsPanel() {
     setLoading(true)
     setErrorMsg(null)
 
-    const [activityRes, profilesRes] = await Promise.all([
-      supabase
-        .from("user_activity")
-        .select("user_id, visit_count, first_visited_at, last_visited_at")
-        .order("last_visited_at", { ascending: false }),
-      supabase
-        .from("profiles")
-        .select("user_id, first_name, last_name, email, role"),
-    ])
+    const { data, error } = await supabase.rpc("get_admin_user_activity")
 
-    if (activityRes.error) {
-      setErrorMsg(activityRes.error.message)
-      setLoading(false)
-      return
-    }
-    if (profilesRes.error) {
-      setErrorMsg(profilesRes.error.message)
-      setLoading(false)
-      return
+    if (error) {
+      setErrorMsg(error.message)
+    } else {
+      setRows((data ?? []) as ActivityRow[])
     }
 
-    const profileMap = new Map(
-      (profilesRes.data ?? []).map((p) => [p.user_id, p])
-    )
-
-    const merged: ActivityRow[] = (activityRes.data ?? []).map((row) => ({
-      ...row,
-      profiles: profileMap.get(row.user_id) ?? null,
-    }))
-
-    setRows(merged)
     setLoading(false)
   }
 
@@ -142,8 +115,8 @@ export default function AdminAnalyticsPanel() {
                 <div className="min-w-0">
                   <div className="truncate text-sm font-medium text-[var(--text)]">{displayName(row)}</div>
                   <div className="text-xs text-[var(--muted)]">
-                    {row.profiles?.email ?? row.user_id}
-                    {row.profiles?.role ? ` · ${row.profiles.role}` : ""}
+                    {row.email ?? "No email"}
+                    {row.role ? ` · ${row.role}` : ""}
                   </div>
                 </div>
                 <div className="flex shrink-0 items-center gap-4 text-right text-xs text-[var(--muted)]">
